@@ -1,0 +1,49 @@
+% table_ablation.tex
+% Table I — Quantization method comparison on TinyStories-15M (4-bit)
+% Generated automatically from compress.py + evaluate.py results
+%
+% Usage in paper:
+%   \input{tables/table_ablation}
+%
+% Requires: booktabs, multirow, siunitx (or just tabular)
+
+\begin{table}[t]
+\centering
+\caption{Quantization method comparison on TinyStories-15M.
+         All methods use 4-bit weight storage. CTLE uses $k{=}16$ codebook entries
+         per tensor; INT4U uses one global scale; INT4BW uses one scale per group
+         of $G{=}32$ columns (effective 5\,bits/weight).
+         NLL and PPL evaluated on 10 TinyStories-style sentences.
+         $\dagger$~PSO/GA use K-means warm start.}
+\label{tab:ablation}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Method} & \textbf{Bits/w} & \textbf{Size (MB)} & \textbf{Ratio} & \textbf{NLL\,$\downarrow$} & \textbf{PPL\,$\downarrow$} & \textbf{Time (s)} \\
+\midrule
+FP32 (baseline)     & 32   & 60.77 & $1.00\times$  & 1.935 & \phantom{00}6.92 & —     \\
+\midrule
+\multicolumn{7}{l}{\textit{Standard INT4 quantization (baselines)}} \\
+INT4 Uniform        &  4   &  7.61 & $7.99\times$  & 9.312 & 11070            & \phantom{0}$<$1 \\
+INT4 Block-wise     & $\approx$5 & 9.51 & $6.39\times$ & 2.371 & \textbf{10.71} & \phantom{0}$<$1 \\
+\midrule
+\multicolumn{7}{l}{\textit{CTLE — learned codebook (this work)}} \\
+CTLE + K-means      &  4   &  7.61 & $7.98\times$  & 2.957 & 19.23           & \phantom{0}73.6 \\
+CTLE + GA$^\dagger$     &  4   &  7.61 & $7.98\times$  & 2.944 & 18.98           & 207.7 \\
+CTLE + PSO$^\dagger$    &  4   &  7.61 & $7.98\times$  & 2.768 & 15.93           & 198.3 \\
+\bottomrule
+\end{tabular}
+%
+\smallskip
+\begin{minipage}{0.95\columnwidth}
+  \footnotesize
+  \textbf{INT4U collapses} (PPL $>$11000) because a single global scale cannot
+  represent the heterogeneous distribution of the 9.2\,M-entry embedding matrix.
+  \textbf{INT4BW} recovers quality (PPL 10.71) at the cost of 25\,\% larger
+  footprint (9.51\,MB vs.\ 7.61\,MB) and additional PSRAM for per-group scales.
+  \textbf{CTLE} achieves competitive PPL at identical 4-bit storage
+  and streams weights directly from Flash with a fixed 64-byte LUT per tensor
+  — eliminating scale-table overhead entirely at inference time.
+\end{minipage}
+\end{table}

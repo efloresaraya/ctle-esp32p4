@@ -1,0 +1,43 @@
+% table_hw.tex
+% Table IV — Hardware benchmark on ESP32-P4 Nano (measured)
+% Board: ESP32-P4 Nano, RISC-V HP @360 MHz (silicon rev v1.3 cap)
+% Model: TinyStories-15M, CTLE-PSO k=16, 4-bit
+% Date: 2026-05-24
+%
+% Usage in paper:
+%   \input{tables/table_hw}
+
+\begin{table}[t]
+\centering
+\caption{Hardware inference benchmark on ESP32-P4 Nano (RISC-V HP, 360\,MHz,
+         32\,MB PSRAM). Model: TinyStories-15M compressed with CTLE-PSO
+         ($k{=}16$, 7.61\,MB). Generation: 64 tokens, temperature=0.8,
+         top-\textit{p}=0.9.}
+\label{tab:hw}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Prompt} & \textbf{Tokens} & \textbf{Prefill (ms)} & \textbf{ms/tok\,$\downarrow$} & \textbf{tok/s\,$\uparrow$} \\
+\midrule
+``Once upon a time''          & 4 & 4{,}130 & 1{,}035.0 & 0.97 \\
+``Tom and his dog went...''   & 8 & 8{,}188 & 1{,}036.2 & 0.97 \\
+``The little girl named Lily''& 6 & 6{,}091 & 1{,}037.2 & 0.96 \\
+\midrule
+\textbf{Average}              & — & —       & \textbf{1{,}036.1} & \textbf{0.965} \\
+\bottomrule
+\end{tabular}
+%
+\smallskip
+\begin{minipage}{0.95\columnwidth}
+  \footnotesize
+  \textbf{Memory:} model loaded Flash $\to$ PSRAM in 2{,}694\,ms.
+  Remaining PSRAM after load: 21{,}566\,KB.
+  No weight reconstruction in SRAM — the 64-byte LUT resides in registers
+  during inference.
+  \textbf{CPU note:} ESP32-P4 silicon revision v1.3 operates at 360\,MHz
+  (not 400\,MHz); the chip's hardware cap applies automatically at boot.
+  \textbf{WDT:} task watchdog fires every 5\,s (informational) because
+  inference saturates CPU0; the system does not crash or reset.
+\end{minipage}
+\end{table}

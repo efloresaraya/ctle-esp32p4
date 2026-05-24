@@ -1,0 +1,20 @@
+{
+  "project": "firmware",
+  "target": "esp32p4",
+  "language": "c",
+  "framework": "esp-idf",
+  "rtos": "freertos",
+  "serial_port": "auto",
+  "baudrate": 115200,
+  "template": "blink_c",
+  "entry": "main/main.c",
+  "board_profile": "esp32p4_nano",
+  "psram": true,
+  "psram_size": "32MB",
+  "flash_size": "16MB",
+  "partition_scheme": "custom",
+  "log_level": "info",
+  "features": {
+    "usb_serial_jtag": true
+  }
+}

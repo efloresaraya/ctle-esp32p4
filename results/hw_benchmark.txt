@@ -1,0 +1,54 @@
+====================================================================
+CTLE-P4 Hardware Benchmark Results
+Model  : TinyStories-15M (dim=288, layers=6, vocab=32000)
+Method : PSO codebook (k=16, 4-bit)
+Board  : ESP32-P4 Nano (RISC-V HP core)
+Date   : 2026-05-24
+====================================================================
+
+SYSTEM INFO
+  CPU freq measured : 360 MHz (chip revision v1.3 cap; sdkconfig sets 400 MHz)
+  PSRAM             : 32 MB @ 80 MHz QSPI
+  Flash             : 16 MB
+  Model size        : 7.61 MB  (SPIFFS)
+  Model load time   : 2694 ms  (Flash -> PSRAM DMA)
+  Free PSRAM loaded : 21566 KB (~21 MB)
+  Free SRAM         :   570 KB
+
+BENCHMARK CSV
+  method,prompt,prefill_ms,gen_ms_tok,tok_per_sec,tokens_gen,psram_free_kb,sram_free_kb
+  CTLE_PSO,once_upon,4130.1,1034.97,0.97,64,21566,570
+  CTLE_PSO,tom_dog,8188.1,1036.22,0.97,64,21566,570
+  CTLE_PSO,lily,6090.6,1037.24,0.96,64,21566,570
+
+SUMMARY
+  Average gen speed : 1036.1 ms/tok  -->  0.965 tok/s
+  Prefill rate      : ~1024 ms/tok   (proportional to prompt length)
+  Memory overhead   : 0 bytes SRAM for weights (LUT=64B in registers)
+
+GENERATED TEXT (temp=0.8, top-p=0.9, seed=0xCAFEBABE)
+  [once_upon] Prompt: "Once upon a time"
+    -> , there was a little girl named Lily. She loved to eat spaghetti because
+       it was her favorite food. Her favorite food was pepper noodYes, please!"
+       One day, Lily's mom made her eat broccoli for dinner. She didn't like it
+       very much, but she
+
+  [tom_dog] Prompt: "Tom and his dog went to the park"
+    -> . They were having a lot of fun playing with the ball. Suddenly, a big dog
+       came running and took the ball from the stranger's face.
+       The dog was not a nice dog. The dog wanted to play with the ball too.
+       The dog jumped up and tried to catch the ball in
+
+  [lily] Prompt: "The little girl named Lily"
+    -> was very hungry. She had been playing all morning in the garden. Her
+       favorite snack was a big, round orange ball. She loved to roll it around
+       and play with it. One sunny day, Lily was rolling the orange ball too far
+       away from her. She was sad and didn't
+
+NOTES
+  - WDT: Task watchdog fires every 5s (expected, not an error). Inference
+    saturates CPU0 so IDLE0 never runs; IDF reports this as a warning.
+  - CPU cap: ESP32-P4 silicon revision v1.3 runs at 360 MHz max.
+    CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ=400 is set; bootloader caps to 360 MHz.
+  - Results are fully deterministic (identical tokens on both runs).
+====================================================================
