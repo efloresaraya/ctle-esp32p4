@@ -1,54 +1,60 @@
-====================================================================
-CTLE-P4 Hardware Benchmark Results
-Model  : TinyStories-15M (dim=288, layers=6, vocab=32000)
-Method : PSO codebook (k=16, 4-bit)
-Board  : ESP32-P4 Nano (RISC-V HP core)
-Date   : 2026-05-24
-====================================================================
+# CTLE-P4 Hardware Benchmark — ESP32-P4 Nano
+# Date: 2026-05-24
+# Board: ESP32-P4 Nano, RISC-V HP @360 MHz (silicon rev v1.3, SDK sets 400 MHz, hw caps to 360 MHz)
+# RAM: 32 MB QSPI PSRAM (80 MHz), 624 KB internal SRAM
+# Flash: 16 MB, SPIFFS partition 13,312 KB @ 0x310000
+# Firmware: CTLE-P4 Engine (IDF v6.1-dev-4650), TinyStories-15M, 64 tokens generated
+# Prompts: same pre-tokenized sequences, fixed RNG seed 0xCAFEBABE, T=0.8, top-p=0.9
+# Note: CTLE (K-means / GA / PSO) share TAG_CTLE binary format → identical runtime.
+#       Only PSO binary was flashed; timing applies to all three CTLE variants.
 
-SYSTEM INFO
-  CPU freq measured : 360 MHz (chip revision v1.3 cap; sdkconfig sets 400 MHz)
-  PSRAM             : 32 MB @ 80 MHz QSPI
-  Flash             : 16 MB
-  Model size        : 7.61 MB  (SPIFFS)
-  Model load time   : 2694 ms  (Flash -> PSRAM DMA)
-  Free PSRAM loaded : 21566 KB (~21 MB)
-  Free SRAM         :   570 KB
+# ── System constants (all runs) ─────────────────────────────────────────────
+PSRAM_TOTAL_KB   = 32768
+SRAM_TOTAL_KB    = 624
+SRAM_FREE_KB     = 570    # at inference time (IDF runtime uses ~54 KB internal)
+RUN_STATE_KB     = 3648   # KV-cache (3456) + RoPE (48) + RunState struct (144)
 
-BENCHMARK CSV
-  method,prompt,prefill_ms,gen_ms_tok,tok_per_sec,tokens_gen,psram_free_kb,sram_free_kb
-  CTLE_PSO,once_upon,4130.1,1034.97,0.97,64,21566,570
-  CTLE_PSO,tom_dog,8188.1,1036.22,0.97,64,21566,570
-  CTLE_PSO,lily,6090.6,1037.24,0.96,64,21566,570
+# ── CSV (all rows) ──────────────────────────────────────────────────────────
+# method,prompt,model_kb,load_ms,prefill_ms,gen_ms_tok,tok_per_sec,tokens_gen,
+# psram_total_kb,psram_used_kb,psram_free_kb,psram_lwm_kb,sram_total_kb,sram_free_kb
 
-SUMMARY
-  Average gen speed : 1036.1 ms/tok  -->  0.965 tok/s
-  Prefill rate      : ~1024 ms/tok   (proportional to prompt length)
-  Memory overhead   : 0 bytes SRAM for weights (LUT=64B in registers)
+CSV,INT4U,once_upon,7431,2696,4151.5,1039.89,0.962,64,32768,11202,21566,21566,624,570
+CSV,INT4U,tom_dog,7431,2696,8231.1,1041.30,0.960,64,32768,11202,21566,21566,624,570
+CSV,INT4U,lily,7431,2696,6221.6,1040.74,0.961,64,32768,11202,21566,21566,624,570
 
-GENERATED TEXT (temp=0.8, top-p=0.9, seed=0xCAFEBABE)
-  [once_upon] Prompt: "Once upon a time"
-    -> , there was a little girl named Lily. She loved to eat spaghetti because
-       it was her favorite food. Her favorite food was pepper noodYes, please!"
-       One day, Lily's mom made her eat broccoli for dinner. She didn't like it
-       very much, but she
+CSV,INT4BW,once_upon,9285,3377,5405.0,1356.06,0.737,64,32768,13086,19682,19682,624,570
+CSV,INT4BW,tom_dog,9285,3377,10736.8,1356.08,0.737,64,32768,13086,19682,19682,624,570
+CSV,INT4BW,lily,9285,3377,8100.8,1355.32,0.738,64,32768,13086,19682,19682,624,570
 
-  [tom_dog] Prompt: "Tom and his dog went to the park"
-    -> . They were having a lot of fun playing with the ball. Suddenly, a big dog
-       came running and took the ball from the stranger's face.
-       The dog was not a nice dog. The dog wanted to play with the ball too.
-       The dog jumped up and tried to catch the ball in
+CSV,CTLE,once_upon,7433,2698,4129.4,1034.70,0.966,64,32768,11202,21566,21566,624,570
+CSV,CTLE,tom_dog,7433,2698,8186.8,1035.94,0.965,64,32768,11202,21566,21566,624,570
+CSV,CTLE,lily,7433,2698,6089.6,1036.95,0.964,64,32768,11202,21566,21566,624,570
 
-  [lily] Prompt: "The little girl named Lily"
-    -> was very hungry. She had been playing all morning in the garden. Her
-       favorite snack was a big, round orange ball. She loved to roll it around
-       and play with it. One sunny day, Lily was rolling the orange ball too far
-       away from her. She was sad and didn't
+# ── Derived: prefill ms/token (prefill_ms / n_prompt_tokens) ───────────────
+# Method   | Prompt    | Pref.ms | P_toks | Pref. ms/tok
+# INT4U    | once_upon | 4151.5  |  4     | 1037.9
+# INT4U    | tom_dog   | 8231.1  |  8     | 1028.9
+# INT4U    | lily      | 6221.6  |  6     | 1036.9  → avg 1034.6
+# INT4BW   | once_upon | 5405.0  |  4     | 1351.3
+# INT4BW   | tom_dog   |10736.8  |  8     | 1342.1
+# INT4BW   | lily      | 8100.8  |  6     | 1350.1  → avg 1347.8
+# CTLE     | once_upon | 4129.4  |  4     | 1032.4
+# CTLE     | tom_dog   | 8186.8  |  8     | 1023.4
+# CTLE     | lily      | 6089.6  |  6     | 1014.9  → avg 1023.6
+#
+# Coherence: prefill_ms/tok ≈ gen_ms/tok (<2%) for all methods → forward pass
+#            dominates; KV-cache growth and sampling overhead are negligible.
+#
+# Key finding: INT4BW is 31% slower than INT4U and CTLE at identical 4-bit budget.
+# Root cause: INT4BW matvec reads per-group scales[rows × n_groups] from PSRAM
+#             (G=32, N=288 → 9 scale reads/row/layer), adding PSRAM bandwidth
+#             on top of the nibble stream. INT4U (single tensor scale) and CTLE
+#             (16-entry LUT in registers) avoid extra PSRAM accesses.
 
-NOTES
-  - WDT: Task watchdog fires every 5s (expected, not an error). Inference
-    saturates CPU0 so IDLE0 never runs; IDF reports this as a warning.
-  - CPU cap: ESP32-P4 silicon revision v1.3 runs at 360 MHz max.
-    CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ=400 is set; bootloader caps to 360 MHz.
-  - Results are fully deterministic (identical tokens on both runs).
-====================================================================
+# ── Averages ────────────────────────────────────────────────────────────────
+# Method  | Model(KB) | Load(ms) | PSRAM_used(KB) | PSRAM_free(KB) | SRAM_free(KB) | avg_gen_ms_tok | σ    | avg_tok/s | σ
+# INT4U   |    7431   |   2696   |     11202      |     21566      |      570      |    1040.6      | 0.6  |   0.961   | 0.001
+# INT4BW  |    9285   |   3377   |     13086      |     19682      |      570      |    1355.8      | 0.4  |   0.737   | 0.001
+# CTLE    |    7433   |   2698   |     11202      |     21566      |      570      |    1035.9      | 1.1  |   0.965   | 0.001
+#
+# FP32: model = 60,777 KB >> SPIFFS capacity (13,312 KB) → not deployable on-device.

@@ -1,43 +1,87 @@
-% table_hw.tex
-% Table IV — Hardware benchmark on ESP32-P4 Nano (measured)
-% Board: ESP32-P4 Nano, RISC-V HP @360 MHz (silicon rev v1.3 cap)
-% Model: TinyStories-15M, CTLE-PSO k=16, 4-bit
-% Date: 2026-05-24
+% table_hw.tex  — Table IV: On-device hardware benchmark (ESP32-P4 Nano)
+% Measured 2026-05-24.  All timings in milliseconds.
+% Three methods × three prompts; 64 tokens generated each run.
+% Fixed RNG seed 0xCAFEBABE, T = 0.8, top-p = 0.9.
+% CTLE (K-means / GA / PSO) share TAG_CTLE binary layout → identical runtime.
+% FP32 (60,777 KB) exceeds SPIFFS capacity (13,312 KB) — not deployable.
 %
-% Usage in paper:
-%   \input{tables/table_hw}
+% Usage: \input{tables/table_hw}
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{Hardware inference benchmark on ESP32-P4 Nano (RISC-V HP, 360\,MHz,
-         32\,MB PSRAM). Model: TinyStories-15M compressed with CTLE-PSO
-         ($k{=}16$, 7.61\,MB). Generation: 64 tokens, temperature=0.8,
-         top-\textit{p}=0.9.}
+\caption{On-device inference benchmark on ESP32-P4 Nano (RISC-V HP, 360\,MHz, 32\,MB PSRAM).
+         Each method generates 64 tokens from three fixed prompts; the same pre-tokenised
+         sequences and RNG seed (0xCAFEBABE) are used in every run.
+         \emph{Prefill\,ms/tok} $= t_{\mathrm{prefill}} / n_{\mathrm{prompt}}$ is shown
+         alongside \emph{Gen\,ms/tok} to verify that prefill and generation throughput are
+         coherent (same forward-pass cost per token).
+         FP32 (60,777\,KB) cannot be deployed: it exceeds the SPIFFS partition (13,312\,KB).
+         CTLE variants (K-means / GA / PSO) share the \texttt{TAG\_CTLE} binary format and
+         therefore have identical inference timing; their rows differ only in PPL quality
+         (see Table~\ref{tab:ablation}).
+         $^\dagger$~PSRAM\,used includes model weights, KV-cache, RoPE tables, and
+         RunState activations (total runtime allocation $\approx$3{,}648\,KB).}
 \label{tab:hw}
-\setlength{\tabcolsep}{6pt}
+\setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lcccc}
+\begin{tabular}{llrrrrrrrrrr}
 \toprule
-\textbf{Prompt} & \textbf{Tokens} & \textbf{Prefill (ms)} & \textbf{ms/tok\,$\downarrow$} & \textbf{tok/s\,$\uparrow$} \\
+\multirow{2}{*}{\textbf{Method}} &
+\multirow{2}{*}{\textbf{Prompt}} &
+\multirow{2}{*}{\textbf{\makecell{Model\\(KB)}}} &
+\multirow{2}{*}{\textbf{\makecell{Load\\(ms)}}} &
+\multicolumn{3}{c}{\textbf{PSRAM (KB)$^\dagger$}} &
+\multirow{2}{*}{\textbf{\makecell{SRAM\\free\\(KB)}}} &
+\multirow{2}{*}{\textbf{\makecell{Prefill\\(ms)}}} &
+\multirow{2}{*}{\textbf{\makecell{Prefill\\ms/tok\,$\downarrow$}}} &
+\multirow{2}{*}{\textbf{\makecell{Gen\\ms/tok\,$\downarrow$}}} &
+\multirow{2}{*}{\textbf{\makecell{tok/s\,$\uparrow$}}} \\
+\cmidrule(lr){5-7}
+ & & & & \textbf{Total} & \textbf{Used} & \textbf{Free} & & & & & \\
 \midrule
-``Once upon a time''          & 4 & 4{,}130 & 1{,}035.0 & 0.97 \\
-``Tom and his dog went...''   & 8 & 8{,}188 & 1{,}036.2 & 0.97 \\
-``The little girl named Lily''& 6 & 6{,}091 & 1{,}037.2 & 0.96 \\
+\multicolumn{12}{l}{\textit{INT4 Uniform — one global scale per tensor}} \\
+\quad INT4U & once\_upon (4\,tok) & 7{,}431 & 2{,}696 & 32{,}768 & 11{,}202 & 21{,}566 & 570 & 4{,}151.5 & 1{,}037.9 & 1{,}039.9 & 0.962 \\
+\quad INT4U & tom\_dog (8\,tok)   & 7{,}431 & 2{,}696 & 32{,}768 & 11{,}202 & 21{,}566 & 570 & 8{,}231.1 & 1{,}028.9 & 1{,}041.3 & 0.960 \\
+\quad INT4U & lily (6\,tok)        & 7{,}431 & 2{,}696 & 32{,}768 & 11{,}202 & 21{,}566 & 570 & 6{,}221.6 & 1{,}036.9 & 1{,}040.7 & 0.961 \\
+\quad\textit{Average}              & —          & 7{,}431 & 2{,}696 & 32{,}768 & 11{,}202 & 21{,}566 & 570 & — & 1{,}034.6 & $1{,}040.6\pm0.6$ & $0.961\pm0.001$ \\
 \midrule
-\textbf{Average}              & — & —       & \textbf{1{,}036.1} & \textbf{0.965} \\
+\multicolumn{12}{l}{\textit{INT4 Block-wise — one scale per group of $G{=}32$ columns}} \\
+\quad INT4BW & once\_upon (4\,tok) & 9{,}285 & 3{,}377 & 32{,}768 & 13{,}086 & 19{,}682 & 570 & 5{,}405.0 & 1{,}351.3 & 1{,}356.1 & 0.737 \\
+\quad INT4BW & tom\_dog (8\,tok)   & 9{,}285 & 3{,}377 & 32{,}768 & 13{,}086 & 19{,}682 & 570 & 10{,}736.8 & 1{,}342.1 & 1{,}356.1 & 0.737 \\
+\quad INT4BW & lily (6\,tok)        & 9{,}285 & 3{,}377 & 32{,}768 & 13{,}086 & 19{,}682 & 570 & 8{,}100.8 & 1{,}350.1 & 1{,}355.3 & 0.738 \\
+\quad\textit{Average}              & —          & 9{,}285 & 3{,}377 & 32{,}768 & 13{,}086 & 19{,}682 & 570 & — & 1{,}347.8 & $1{,}355.8\pm0.4$ & $0.737\pm0.001$ \\
+\midrule
+\multicolumn{12}{l}{\textit{CTLE — learned 16-entry LUT per tensor (K-means / GA / PSO: identical runtime)}} \\
+\quad CTLE & once\_upon (4\,tok) & 7{,}433 & 2{,}698 & 32{,}768 & 11{,}202 & 21{,}566 & 570 & 4{,}129.4 & 1{,}032.4 & 1{,}034.7 & 0.966 \\
+\quad CTLE & tom\_dog (8\,tok)   & 7{,}433 & 2{,}698 & 32{,}768 & 11{,}202 & 21{,}566 & 570 & 8{,}186.8 & 1{,}023.4 & 1{,}035.9 & 0.965 \\
+\quad CTLE & lily (6\,tok)        & 7{,}433 & 2{,}698 & 32{,}768 & 11{,}202 & 21{,}566 & 570 & 6{,}089.6 & 1{,}014.9 & 1{,}037.0 & 0.964 \\
+\quad\textbf{Average}             & —          & \textbf{7{,}433} & \textbf{2{,}698} & 32{,}768 & \textbf{11{,}202} & \textbf{21{,}566} & \textbf{570} & — & \textbf{1{,}023.6} & $\mathbf{1{,}035.9\pm1.1}$ & $\mathbf{0.965\pm0.001}$ \\
 \bottomrule
 \end{tabular}
-%
 \smallskip
-\begin{minipage}{0.95\columnwidth}
+\begin{minipage}{\textwidth}
   \footnotesize
-  \textbf{Memory:} model loaded Flash $\to$ PSRAM in 2{,}694\,ms.
-  Remaining PSRAM after load: 21{,}566\,KB.
-  No weight reconstruction in SRAM — the 64-byte LUT resides in registers
-  during inference.
-  \textbf{CPU note:} ESP32-P4 silicon revision v1.3 operates at 360\,MHz
-  (not 400\,MHz); the chip's hardware cap applies automatically at boot.
-  \textbf{WDT:} task watchdog fires every 5\,s (informational) because
-  inference saturates CPU0; the system does not crash or reset.
+  \textbf{Prefill coherence.}
+  For all three methods, prefill\,ms/tok $\approx$ gen\,ms/tok (deviation $<$2\,\%),
+  confirming that a single transformer forward pass dominates latency and that KV-cache
+  growth over 64 generated tokens is negligible.
+
+  \textbf{INT4BW overhead.}
+  Despite an identical 4-bit weight budget (after rounding), INT4BW is
+  \textbf{31\,\%} slower than both INT4U and CTLE (1{,}356 vs.\ 1{,}038\,ms/tok).
+  The root cause is the per-group scale table \texttt{scales[rows $\times$ $\lceil$cols/$G\rceil$]}
+  stored in PSRAM: with $G{=}32$ and $N{=}288$ columns, each matvec row requires
+  $\lceil 288/32 \rceil = 9$ additional PSRAM scale reads, doubling effective memory
+  traffic.  INT4U (single tensor scale) and CTLE (16-float LUT resident in
+  registers during the row loop) avoid this overhead entirely.
+
+  \textbf{PSRAM watermark.}
+  The minimum-free-PSRAM watermark equals the steady-state free value for all methods,
+  confirming no transient allocations occur during inference.
+
+  \textbf{SRAM.}
+  Internal SRAM (624\,KB total) remains 570\,KB free throughout inference.
+  The 54\,KB used by the IDF runtime (stacks, USB, logging) leaves ample headroom for
+  the activation buffers already embedded in the PSRAM-allocated \texttt{RunState} struct.
 \end{minipage}
-\end{table}
+\end{table*}

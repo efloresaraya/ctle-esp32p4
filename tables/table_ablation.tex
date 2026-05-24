@@ -7,7 +7,7 @@
 %
 % Requires: booktabs, multirow, siunitx (or just tabular)
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \caption{Quantization method comparison on TinyStories-15M.
          All methods use 4-bit weight storage. CTLE uses $k{=}16$ codebook entries
@@ -36,7 +36,7 @@ CTLE + PSO$^\dagger$    &  4   &  7.61 & $7.98\times$  & 2.768 & 15.93          
 \end{tabular}
 %
 \smallskip
-\begin{minipage}{0.95\columnwidth}
+\begin{minipage}{\textwidth}
   \footnotesize
   \textbf{INT4U collapses} (PPL $>$11000) because a single global scale cannot
   represent the heterogeneous distribution of the 9.2\,M-entry embedding matrix.
@@ -46,4 +46,4 @@ CTLE + PSO$^\dagger$    &  4   &  7.61 & $7.98\times$  & 2.768 & 15.93          
   and streams weights directly from Flash with a fixed 64-byte LUT per tensor
   — eliminating scale-table overhead entirely at inference time.
 \end{minipage}
-\end{table}
+\end{table*}

@@ -15,6 +15,8 @@
 \usepackage{graphicx}
 \usepackage{cite}
 \usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{makecell}
 \hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
 
 \begin{document}
@@ -32,7 +34,7 @@
 }
 
 \markboth{IEEE Internet of Things Journal}%
-{Flores: CTLE — Compressed Tensor-LUT Engine for On-Device TinyLM Inference}
+{Flores: CTLE — Compressed Tensor-LUT Engine for IoT On-Device Inference}
 
 \maketitle
 
@@ -65,9 +67,12 @@ As INT4 baselines: uniform INT4 collapses (PPL\,=\,11070) due to its single
 global scale, while block-wise INT4 ($G{=}32$) achieves PPL\,=\,10.71 at the
 cost of 25\,\% higher footprint (9.51\,MB) and per-group scale overhead.
 We further implement a streaming C inference engine for the ESP32-P4 Nano
-(RISC-V HP\,@360\,MHz, 32\,MB PSRAM), achieving \textbf{0.965\,tok/s} with
-the model loaded from 16\,MB Flash, 21.5\,MB PSRAM free after loading, and
-coherent autoregressive generation across three prompts.
+(RISC-V HP\,@360\,MHz, 32\,MB PSRAM).
+Hardware benchmarks across all formats reveal that INT4BW is
+\textbf{31\,\%} slower than INT4U and CTLE (1{,}356 vs.\
+1{,}038\,ms/tok) due to per-group scale reads from PSRAM, while
+CTLE achieves \textbf{0.965\,tok/s} with the LUT resident in registers,
+21.5\,MB PSRAM free, and prefill throughput coherent with generation speed.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -492,9 +497,10 @@ repository~\cite{karpathy2023llama2c}.
 NLL is mean cross-entropy per token; $\mathrm{PPL}=\exp(\mathrm{NLL})$.
 
 \paragraph{Compression pipeline.}
-\texttt{scripts/compress.py} with \texttt{--method \{kmeans|ga|pso|int4\_uniform|int4\_blockwise\}};
-all runs use \texttt{--k 16}, seed\,=\,42.
-Timing measured on Apple M-series CPU (laptop, no GPU).
+Script \texttt{compress.py}, argument \texttt{--method} $\in$
+\texttt{\{kmeans, ga, pso, int4\_uniform, int4\_blockwise\}};
+all runs use \texttt{--k~16}, seed\,=\,42.
+Compression timing was measured on an Apple M-series laptop (no GPU).
 
 \paragraph{Hardware target.}
 ESP32-P4 Nano: RISC-V HP core @360\,MHz (silicon rev\,v1.3 hardware cap;
@@ -551,35 +557,60 @@ smaller model (TinyStories-15M vs.\ billion-parameter models).
 \subsection{Hardware benchmark on ESP32-P4 Nano}
 \label{sec:hw_bench}
 
-Table~\ref{tab:hw} reports on-device benchmarks with the PSO-compressed model.
-The ESP32-P4 Nano achieves \textbf{0.965\,tok/s} (average across three prompts),
-with 21.5\,MB of PSRAM remaining free after loading the 7.61-MB model.
-Prefill throughput is $\sim$1.02\,tok/s (proportional to prompt length, as
-expected for autoregressive prefill).
+Table~\ref{tab:hw} reports on-device benchmarks for all three compression
+formats across three fixed prompts (4, 8, and 6 prompt tokens, 64 tokens
+generated each).
+The same pre-tokenised sequences and RNG seed (0xCAFEBABE) are used in
+every run; generation parameters are temperature\,$=0.8$, top-$p=0.9$.
 
 \input{../tables/table_hw}
 
-\paragraph{Generated text quality (PSO, temp=0.8, top-$p$=0.9).}
-All three prompts produce coherent, TinyStories-style continuations:
+\paragraph{Throughput.}
+CTLE achieves $\mathbf{1{,}035.9\pm1.1}$\,ms/tok ($\mathbf{0.965\pm0.001}$\,tok/s,
+mean\,$\pm$\,$\sigma$ across three prompts), equal to INT4U within measurement
+noise ($1{,}040.6\pm0.6$\,ms/tok, $0.961\pm0.001$\,tok/s).
+INT4BW is significantly slower at $1{,}355.8\pm0.4$\,ms/tok
+($0.737\pm0.001$\,tok/s), a \textbf{31\,\%} penalty relative to the other
+4-bit formats despite an identical bit budget (see Discussion,
+Section~\ref{sec:discussion}).
+
+\paragraph{Prefill coherence.}
+Prefill throughput (prefill\,ms\,$/$\,prompt\,tokens) matches generation
+throughput within 2\,\% for all methods, confirming that the forward-pass
+cost per token is stable regardless of position in the sequence and that
+KV-cache growth over 64 tokens is negligible.
+
+\paragraph{Memory.}
+All 32\,MB of PSRAM are available at boot.
+RunState (KV-cache $+$ RoPE tables $+$ activation struct) consumes 3{,}648\,KB
+and is identical across formats.
+Model weights occupy 7{,}551\,KB (INT4U/CTLE) or 9{,}435\,KB (INT4BW) in PSRAM;
+the heap allocator adds a small alignment overhead relative to the on-disk size.
+FP32 (60{,}777\,KB) exceeds the SPIFFS partition (13{,}312\,KB) and cannot
+be deployed on-device.
+Internal SRAM (624\,KB total) remains 570\,KB free throughout inference;
+the 54\,KB used by the IDF runtime is constant across formats.
+
+\paragraph{Generated text quality (CTLE-PSO, temp=0.8, top-$p$=0.9).}
+All three prompts produce coherent TinyStories-style continuations:
 \begin{itemize}
   \item \textit{``Once upon a time''} $\to$
-        \textit{``...there was a little girl named Lily. She loved to eat spaghetti
-        because it was her favorite food...''}
+        \textit{``\ldots there was a little girl named Lily. She loved to eat
+        spaghetti because it was her favorite food\ldots''}
   \item \textit{``Tom and his dog went to the park''} $\to$
-        \textit{``...They were having a lot of fun playing with the ball.
-        Suddenly, a big dog came running...''}
+        \textit{``\ldots They were having a lot of fun playing with the ball.
+        Suddenly, a big dog came running\ldots''}
   \item \textit{``The little girl named Lily''} $\to$
-        \textit{``...was very hungry. She had been playing all morning in the
-        garden. Her favorite snack was a big, round orange ball...''}
+        \textit{``\ldots was very hungry. She had been playing all morning in the
+        garden. Her favorite snack was a big, round orange ball\ldots''}
 \end{itemize}
-Generation is fully deterministic (identical tokens across two independent runs).
 
 \paragraph{CPU note.}
-The ESP32-P4 silicon revision~v1.3 operates at 360\,MHz (hardware cap);
-the SDK target of 400\,MHz is automatically adjusted by the bootloader.
-Task watchdog warnings during inference are expected and harmless: the CTLE
-inference loop saturates CPU0 at 100\%, preventing the IDLE task from resetting
-the watchdog timer, but the system does not crash or reset.
+The ESP32-P4 silicon revision~v1.3 operates at 360\,MHz (hardware cap;
+SDK target 400\,MHz is adjusted by the bootloader).
+Task-watchdog warnings during inference are expected and harmless: the
+inference loop saturates CPU0, preventing IDLE0 from resetting the WDT,
+but the system does not crash or reset.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -594,19 +625,27 @@ on per-tensor INT4 baselines~\cite{frantar2023gptq,tomasev2019llm_quantization_s
 and explains why per-group schemes (INT4BW) or learned codebooks (CTLE) are
 necessary for sub-8-bit compression.
 
-\paragraph{INT4BW vs.\ CTLE.}
+\paragraph{INT4BW vs.\ CTLE: quality--throughput trade-off.}
 INT4BW achieves better PPL (10.71 vs.\ 15.93) by using finer-grained scale
-adaptation.
-However, it requires 25\,\% more storage (9.51 vs.\ 7.61\,MB) and per-group
-scale reads in the hot inference loop, increasing memory traffic and instruction
-count on RISC-V.
-CTLE avoids this overhead by replacing scale tables with a 64-byte LUT per
-tensor---fully resident in registers during inference---at the cost of PPL
-quality.
-The choice between INT4BW and CTLE+PSO depends on the application: if PPL is
-the primary constraint and footprint is secondary, INT4BW is preferable; if
-minimum footprint and streaming inference from Flash are paramount, CTLE+PSO
-is the better option.
+adaptation, at the cost of 25\,\% higher storage (9.51 vs.\ 7.61\,MB).
+The hardware benchmark reveals a second, qualitatively different cost:
+INT4BW is \textbf{31\,\%} slower than CTLE on the same hardware
+($1{,}356$ vs.\ $1{,}036$\,ms/tok), a gap that arises purely from PSRAM
+bandwidth.
+Each INT4BW matvec row requires reading
+$\lceil N/G \rceil = \lceil 288/32 \rceil = 9$ per-group scale values from
+the \texttt{scales[rows$\times$n\_groups]} table in PSRAM before processing
+the nibble stream, effectively doubling PSRAM memory transactions per row.
+INT4U eliminates this cost by using one scalar scale per tensor (cached in a
+register), and CTLE replaces it with a 16-float LUT that fits in 16 registers
+and remains resident throughout the entire row loop---neither format requires
+additional PSRAM reads beyond the nibble stream itself.
+As a result, INT4U and CTLE achieve statistically indistinguishable throughput
+despite different dequantisation arithmetic (scalar multiply vs.\ LUT lookup).
+The choice between INT4BW and CTLE+PSO therefore depends on the deployment
+constraint: INT4BW is preferable when PPL is the primary metric and the
+31\,\% throughput penalty is acceptable; CTLE+PSO is better when maximum
+throughput and minimum footprint take priority.
 
 \paragraph{Value of PSO over K-means.}
 The $-$17.2\,\% PPL improvement of PSO over K-means at zero additional memory
@@ -619,14 +658,20 @@ On small tensors ($\leq$82K weights), all three methods converge to the same
 quality, validating that K-means already finds the global minimum for those.
 
 \paragraph{Throughput on ESP32-P4.}
-The measured 0.965\,tok/s on the ESP32-P4 Nano RISC-V@360\,MHz is a baseline
-without Xtensa-specific unrolled kernels.
-The CTLE matvec bottleneck for TinyStories-15M is the embedding projection
-head (32\,000 output logits $\times$ 288 hidden dimensions per token), which
-accounts for the majority of compute per token.
-RISC-V-specific optimizations (e.g., vectorized load/accumulate with the RVV
-extension, or hand-unrolled nibble decoding) are expected to further improve
-throughput and are left for future work.
+The measured $0.965\pm0.001$\,tok/s for CTLE and $0.961\pm0.001$\,tok/s for
+INT4U on the ESP32-P4 Nano RISC-V@360\,MHz are baselines without
+RISC-V-specific kernel tuning.
+Both INT4U and CTLE are dominated by PSRAM bandwidth---reading the nibble
+stream---rather than arithmetic, explaining their near-identical throughput.
+INT4BW, by contrast, adds a second PSRAM access pattern (scale reads) that
+increases effective memory traffic per matvec row, reducing throughput by 31\,\%
+independently of the nibble bandwidth.
+The dominant compute cost per token is the output logit projection
+(32\,000$\times$288 matvec), with the six attention and six FFN layers sharing
+the remaining time.
+RISC-V-specific optimisations (RVV vectorised nibble decode, unrolled LUT
+scatter-accumulate) are expected to reduce the per-token time and are left for
+future work.
 
 \paragraph{Limitations.}
 First, evaluation is on a single model and corpus; broader testing across

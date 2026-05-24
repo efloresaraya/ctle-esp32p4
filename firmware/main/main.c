@@ -20,8 +20,9 @@
  *   Blocks: tag=0 F32 (count u32 + data), tag=1 CTLE (rows u32 + cols u32 + lut[16]f32 + nibbles)
  *
  * Benchmark CSV output (copy to paper):
- *   method, prompt, prefill_ms, gen_ms_per_tok, tok_per_sec, tokens_gen,
- *   psram_free_kb, sram_free_kb
+ *   method, prompt, model_kb, load_ms, prefill_ms, gen_ms_per_tok, tok_per_sec,
+ *   tokens_gen, psram_total_kb, psram_used_kb, psram_free_kb, psram_lwm_kb,
+ *   sram_total_kb, sram_free_kb
  */
 
 #include <stdio.h>
@@ -128,6 +129,35 @@ typedef struct {
 static Model     g_model;
 static RunState *g_state;  /* allocated in PSRAM */
 
+/* ─── Profiling globals (set during init, read in every run_benchmark) ──────── */
+static char    g_method_name[32] = "unknown"; /* auto-detected from tensor tags   */
+static size_t  g_model_bytes     = 0;         /* bytes read from SPIFFS            */
+static int64_t g_load_ms         = 0;         /* Flash→PSRAM load time (ms)        */
+static size_t  g_psram_total_kb  = 0;         /* captured once at boot             */
+static size_t  g_psram_runstate_kb = 0;       /* free after KV-cache + RoPE alloc  */
+static size_t  g_psram_model_kb  = 0;         /* free after full model loaded       */
+static size_t  g_sram_total_kb   = 0;         /* internal SRAM total (at boot)      */
+
+/* Auto-detect compression format from the tok_emb tensor tag.
+ * NOTE: CTLE variants (K-means / GA / PSO) all write TAG_CTLE and are
+ * indistinguishable at runtime — their inference timings are therefore
+ * identical by construction (same byte layout, same matvec kernel).     */
+static void detect_method(void)
+{
+    switch (g_model.tok_emb.tag) {
+        case TAG_CTLE:   snprintf(g_method_name, sizeof(g_method_name), "CTLE");   break;
+        case TAG_INT4U:  snprintf(g_method_name, sizeof(g_method_name), "INT4U");  break;
+        case TAG_INT4BW: snprintf(g_method_name, sizeof(g_method_name), "INT4BW"); break;
+        case TAG_F32:    snprintf(g_method_name, sizeof(g_method_name), "FP32");   break;
+        default:
+            snprintf(g_method_name, sizeof(g_method_name), "TAG%u",
+                     (unsigned)g_model.tok_emb.tag);
+            break;
+    }
+    ESP_LOGI(TAG, "Detected method : %s  (tok_emb tag=%u, model=%zu B)",
+             g_method_name, (unsigned)g_model.tok_emb.tag, g_model_bytes);
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
  * SPIFFS + binary loader
  * ════════════════════════════════════════════════════════════════════════════ */
@@ -218,8 +248,9 @@ static esp_err_t load_model(const char *path)
     }
     if (read_block(f, &g_model.norm) != ESP_OK) goto fail;
 
+    g_model_bytes = (size_t)ftell(f);   /* total bytes read from SPIFFS */
     fclose(f);
-    ESP_LOGI(TAG, "Model loaded OK");
+    ESP_LOGI(TAG, "Model loaded OK  (%zu KB)", g_model_bytes / 1024);
     return ESP_OK;
 fail:
     fclose(f); return ESP_FAIL;
@@ -658,26 +689,42 @@ static void run_benchmark(const char *name, const int32_t *prompt, int plen)
     float gen_ms_tok  = (float)t_gen / 1000.0f / (float)gen_toks;
     float tok_per_sec = 1000.0f / gen_ms_tok;
 
-    size_t psram_free = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
-    size_t int_free   = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    /* Memory snapshot at inference time (after all allocs are live) */
+    size_t psram_free_kb = heap_caps_get_free_size(MALLOC_CAP_SPIRAM)    / 1024;
+    size_t psram_used_kb = g_psram_total_kb - psram_free_kb;
+    size_t sram_free_kb  = heap_caps_get_free_size(MALLOC_CAP_INTERNAL)  / 1024;
+    /* Watermark: minimum free PSRAM ever seen (catches any transient spike) */
+    size_t psram_lwm_kb  = heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM) / 1024;
 
     ESP_LOGI(TAG, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    ESP_LOGI(TAG, "Method    : %s", g_method_name);
     ESP_LOGI(TAG, "Prompt    : %s (%d tokens)", name, plen);
     ESP_LOGI(TAG, "Prefill   : %.1f ms", prefill_ms);
-    ESP_LOGI(TAG, "Gen speed : %.1f ms/tok  (%.2f tok/s)", gen_ms_tok, tok_per_sec);
+    ESP_LOGI(TAG, "Gen speed : %.1f ms/tok  (%.3f tok/s)", gen_ms_tok, tok_per_sec);
     ESP_LOGI(TAG, "Generated : %d tokens", gen_toks);
-    ESP_LOGI(TAG, "PSRAM free: %zu KB", psram_free / 1024);
-    ESP_LOGI(TAG, "SRAM  free: %zu KB", int_free   / 1024);
+    ESP_LOGI(TAG, "Model size: %zu KB  (loaded in %lld ms)", g_model_bytes/1024, g_load_ms);
+    ESP_LOGI(TAG, "PSRAM     : total=%zu KB  used=%zu KB  free=%zu KB  lwm=%zu KB",
+             g_psram_total_kb, psram_used_kb, psram_free_kb, psram_lwm_kb);
+    ESP_LOGI(TAG, "SRAM      : total=%zu KB  free=%zu KB",
+             g_sram_total_kb, sram_free_kb);
 
     /* Print generated token IDs for offline decoding in Python */
     printf("TOKENS[%s]:", name);
     for (int i = plen; i < n; i++) printf(" %ld", (long)buf[i]);
     printf("\n");
 
-    /* CSV row — paste directly into paper spreadsheet */
-    printf("CSV,CTLE_PSO,%s,%.1f,%.2f,%.2f,%d,%zu,%zu\n",
-           name, prefill_ms, gen_ms_tok, tok_per_sec,
-           gen_toks, psram_free / 1024, int_free / 1024);
+    /* ── CSV row (columns match header printed in app_main) ──────────────────
+     * method, prompt, model_kb, load_ms, prefill_ms, gen_ms_tok, tok_per_sec,
+     * tokens_gen, psram_total_kb, psram_used_kb, psram_free_kb, psram_lwm_kb,
+     * sram_total_kb, sram_free_kb
+     * ───────────────────────────────────────────────────────────────────────── */
+    printf("CSV,%s,%s,%zu,%lld,%.1f,%.2f,%.3f,%d,%zu,%zu,%zu,%zu,%zu,%zu\n",
+           g_method_name, name,
+           g_model_bytes / 1024, g_load_ms,
+           prefill_ms, gen_ms_tok, tok_per_sec,
+           gen_toks,
+           g_psram_total_kb, psram_used_kb, psram_free_kb, psram_lwm_kb,
+           g_sram_total_kb, sram_free_kb);
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -712,39 +759,51 @@ static esp_err_t alloc_run_state(void)
  * ════════════════════════════════════════════════════════════════════════════ */
 void app_main(void)
 {
-    ESP_LOGI(TAG, "CTLE-P4 Engine  —  ESP32-P4 Nano (RISC-V HP @400MHz)");
-    ESP_LOGI(TAG, "Free PSRAM : %zu KB", heap_caps_get_free_size(MALLOC_CAP_SPIRAM)   / 1024);
-    ESP_LOGI(TAG, "Free SRAM  : %zu KB", heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024);
+    /* ── 0. Boot memory snapshot (before any heap allocation) ─────────────── */
+    g_psram_total_kb = heap_caps_get_total_size(MALLOC_CAP_SPIRAM)    / 1024;
+    g_sram_total_kb  = heap_caps_get_total_size(MALLOC_CAP_INTERNAL)  / 1024;
+    size_t psram_free_boot = heap_caps_get_free_size(MALLOC_CAP_SPIRAM)   / 1024;
+    size_t sram_free_boot  = heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024;
 
-    /* 1. SPIFFS */
+    ESP_LOGI(TAG, "CTLE-P4 Engine  —  ESP32-P4 Nano (RISC-V HP @360MHz, rev 1.3)");
+    ESP_LOGI(TAG, "PSRAM : total=%zu KB  free=%zu KB", g_psram_total_kb, psram_free_boot);
+    ESP_LOGI(TAG, "SRAM  : total=%zu KB  free=%zu KB", g_sram_total_kb,  sram_free_boot);
+
+    /* ── 1. SPIFFS ────────────────────────────────────────────────────────── */
     if (init_spiffs() != ESP_OK) { ESP_LOGE(TAG, "SPIFFS failed"); return; }
 
-    /* 2. KV cache + RoPE (in PSRAM) */
+    /* ── 2. KV-cache + RoPE tables + RunState struct (PSRAM) ─────────────── */
     if (alloc_run_state() != ESP_OK) { ESP_LOGE(TAG, "RunState alloc failed"); return; }
+    g_psram_runstate_kb = heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024;
+    ESP_LOGI(TAG, "PSRAM after RunState: %zu KB free  (RunState used ~%zu KB)",
+             g_psram_runstate_kb, psram_free_boot - g_psram_runstate_kb);
 
-    /* 3. Load model from SPIFFS → PSRAM
-     *    Flash the PSO-compressed binary:
-     *       python scripts/compress.py --method pso ... -o weights/model.bin
-     *       esptool.py write_flash 0x310000 weights/spiffs.bin
-     *    (or use idf.py spiffsgen + menuconfig) */
-    int64_t t_load = esp_timer_get_time();
+    /* ── 3. Load model from SPIFFS → PSRAM ───────────────────────────────── */
+    int64_t t0 = esp_timer_get_time();
     if (load_model("/spiffs/model.bin") != ESP_OK) {
         ESP_LOGE(TAG, "Model load failed"); return;
     }
-    ESP_LOGI(TAG, "Load time  : %lld ms", (esp_timer_get_time() - t_load) / 1000);
-    ESP_LOGI(TAG, "Free PSRAM after model: %zu KB",
-             heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024);
+    g_load_ms       = (esp_timer_get_time() - t0) / 1000;
+    g_psram_model_kb = heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024;
+    ESP_LOGI(TAG, "Load time  : %lld ms", g_load_ms);
+    ESP_LOGI(TAG, "PSRAM after model: %zu KB free  (model used ~%zu KB)",
+             g_psram_model_kb, g_psram_runstate_kb - g_psram_model_kb);
 
-    /* 4. CSV header */
-    printf("\nCSV header: method,prompt,prefill_ms,gen_ms_tok,tok_per_sec,"
-           "tokens_gen,psram_free_kb,sram_free_kb\n");
+    /* ── 4. Detect compression format and report ──────────────────────────── */
+    detect_method();
 
-    /* 5. Benchmark — three prompts, same seed for reproducibility */
+    /* ── 5. Print CSV header ──────────────────────────────────────────────── */
+    printf("\nCSV_HEADER:method,prompt,model_kb,load_ms,prefill_ms,"
+           "gen_ms_tok,tok_per_sec,tokens_gen,"
+           "psram_total_kb,psram_used_kb,psram_free_kb,psram_lwm_kb,"
+           "sram_total_kb,sram_free_kb\n\n");
+
+    /* ── 6. Benchmark — three prompts, fixed seed for reproducibility ─────── */
     g_rng = 0xCAFEBABEu;
     run_benchmark("once_upon", PROMPT_ONCE_UPON, PROMPT_ONCE_UPON_LEN);
     run_benchmark("tom_dog",   PROMPT_TOM_DOG,   PROMPT_TOM_DOG_LEN);
     run_benchmark("lily",      PROMPT_LILY,       PROMPT_LILY_LEN);
 
-    ESP_LOGI(TAG, "Benchmark complete. Idle.");
+    ESP_LOGI(TAG, "All benchmarks complete. Idle.");
     while (1) vTaskDelay(pdMS_TO_TICKS(30000));
 }
