@@ -13,6 +13,7 @@ TAG_F32    = 0
 TAG_CTLE   = 1
 TAG_INT4U  = 2
 TAG_INT4BW = 3
+TAG_PCTLE  = 4   # Product-LUT CTLE — same data layout as CTLE
 
 _INT4_OFFSET = 7  # stored nibble = signed_q + 7
 
@@ -58,12 +59,20 @@ def read_ctle_bin(path: Path) -> tuple[dict, dict]:
          vocab_size, max_seq_len, flags) = struct.unpack("<IIIIIIII", f.read(32))
 
         kv_dim = dim * n_kv_heads // n_heads
+
+        # Peek at first block tag to detect P-CTLE format
+        _peek_pos = f.tell()
+        _first_tag = struct.unpack("<B", f.read(1))[0]
+        f.seek(_peek_pos)
+        _is_pctle = (_first_tag == TAG_PCTLE)
+
         config = {
             "dim": dim, "hidden_dim": hidden_dim,
             "n_layers": n_layers, "n_heads": n_heads, "n_kv_heads": n_kv_heads,
             "vocab_size": vocab_size, "max_seq_len": max_seq_len,
             "weight_tied": bool(flags & 1),
             "kv_dim": kv_dim,
+            "pctle": _is_pctle,   # True → use P-CTLE forward pass in evaluate.py
         }
 
         def read_block(name: str, shape: tuple) -> np.ndarray:
@@ -72,7 +81,10 @@ def read_ctle_bin(path: Path) -> tuple[dict, dict]:
                 count = struct.unpack("<I", f.read(4))[0]
                 arr = np.frombuffer(f.read(count * 4), dtype=np.float32).copy()
                 return arr.reshape(shape)
-            elif tag == TAG_CTLE:
+            elif tag in (TAG_CTLE, TAG_PCTLE):
+                # P-CTLE has identical data layout to CTLE; only tag differs.
+                # Dequantize to approximate FP32 — activation quantization
+                # is applied at inference time in forward_pctle().
                 rows, cols = struct.unpack("<II", f.read(8))
                 lut = np.frombuffer(f.read(64), dtype=np.float32).copy()
                 n_bytes = (rows * cols + 1) // 2

@@ -1,0 +1,46 @@
+P-CTLE Hardware Benchmark — ESP32-P4 Nano (RISC-V HP @360MHz)
+Generated: 2026-05-24
+Method detected: PCTLE (TAG_PCTLE=4)
+
+CSV_HEADER: method,prompt,model_kb,load_ms,prefill_ms,gen_ms_tok,tok_per_sec,
+            tokens_gen,psram_total_kb,psram_used_kb,psram_free_kb,psram_lwm_kb,
+            sram_total_kb,sram_free_kb
+
+CSV,PCTLE,once_upon,7433,2670,3320.1,831.31,1.203,64,32768,11202,21566,21566,622,568
+CSV,PCTLE,tom_dog,7433,2670,6470.1,834.20,1.199,64,32768,11202,21566,21566,622,568
+CSV,PCTLE,lily,7433,2670,4875.8,831.99,1.202,64,32768,11202,21566,21566,622,568
+
+DERIVED STATS
+=============
+gen_ms_tok values : 831.31 / 834.20 / 831.99
+mean gen_ms_tok   : 832.50 ms/tok
+std  gen_ms_tok   :   1.47 ms
+mean tok/s        : 1.201 tok/s
+
+COMPARISON vs CTLE (1035.9 ms/tok, 0.965 tok/s)
+  Speed improvement : (1035.9 - 832.5) / 1035.9 = 19.6% faster
+  Throughput gain   : (1.201 - 0.965) / 0.965   = 24.5% more tok/s
+
+KEY FINDING
+===========
+P-CTLE eliminates float multiply (FMUL.S) from the inner loop on RISC-V.
+Replacing  acc += LUT_w[nibble] * x[c]      (FMUL.S + FADD.S)
+with       acc += LUT_p[(a_idx<<4)|nibble]  (integer addr + FADD.S)
+saves ~4 cycles per multiply on ESP32-P4 RISC-V.
+
+Overhead: 256 FMUL.S per GEMV call to build LUT_p (amortised over M*N ops).
+  For embedding (32000x288 = 9.2M ops): 256 / 9,216,000 = 0.003% overhead.
+  For projection (288x288 = 82,944 ops): 256 / 82,944 = 0.3% overhead.
+
+MEMORY (identical to CTLE)
+  Model   : 7,433 KB (7.61 MB on-disk)
+  PSRAM total : 32,768 KB
+  PSRAM used  : 11,202 KB (RunState + model)
+  PSRAM free  : 21,566 KB
+  SRAM free   :    568 KB
+
+QUALITY (Python evaluation)
+  TinyStories PPL : 33.14  (vs CTLE-PSO 15.93, +108%)
+  WikiText-2 PPL  : 29,049 (vs CTLE-PSO 16,827, +73%)
+  Activation quantisation adds error on top of weight quantisation.
+  Primary advantage is the multiplier-free datapath for FPGA/NPU targets.

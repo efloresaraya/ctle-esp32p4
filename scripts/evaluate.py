@@ -143,6 +143,27 @@ def _apply_rope(
     return rot(xq), rot(xk)
 
 
+def _quantize_vec(x: torch.Tensor) -> torch.Tensor:
+    """Uniform 16-level quantization of a 1-D activation vector (P-CTLE step)."""
+    x_min = x.min().item()
+    x_max = x.max().item()
+    step = (x_max - x_min) / 15.0
+    if step < 1e-8:
+        return x.clone()
+    a_idx = torch.clamp(torch.round((x - x_min) / step), 0, 15).long()
+    return (x_min + a_idx.float() * step).to(x.dtype)
+
+
+def _quantize_act(x: torch.Tensor) -> torch.Tensor:
+    """Per-token (per-row) uniform 16-level activation quantization for P-CTLE.
+    Matches the firmware pctle_matvec() quantization step exactly.
+    """
+    if x.dim() == 1:
+        return _quantize_vec(x)
+    # [seq, dim] → quantize each token independently
+    return torch.stack([_quantize_vec(x[i]) for i in range(x.shape[0])], dim=0)
+
+
 def forward(
     tokens: torch.Tensor,      # [seq_len]  int64
     weights: dict,
@@ -203,6 +224,81 @@ def forward(
     return logits
 
 
+def forward_pctle(
+    tokens: torch.Tensor,      # [seq_len]  int64
+    weights: dict,
+    config: dict,
+    freqs_cis: torch.Tensor,
+) -> torch.Tensor:
+    """P-CTLE forward pass.
+
+    Identical to forward() but every activation vector is quantized to 16
+    uniform levels before each weight matrix multiply, simulating the
+    firmware pctle_matvec() product-LUT kernel.  Weights are already
+    approximately quantized (loaded from a P-CTLE bin via ctle_reader).
+
+    No multiplications occur between quantized activations and quantized
+    weights in the hot path — the Python emulation uses FP32 matmul for
+    convenience, but the quantisation error profile matches the hardware.
+    """
+    dim        = config["dim"]
+    n_heads    = config["n_heads"]
+    n_kv_heads = config["n_kv_heads"]
+    n_layers   = config["n_layers"]
+    head_dim   = dim // n_heads
+    kv_dim     = config["kv_dim"]
+    kv_heads   = n_kv_heads
+    n_rep      = n_heads // kv_heads
+
+    seq = tokens.shape[0]
+    w = {k: _t(v) for k, v in weights.items()}
+
+    x = w["tok_embeddings"][tokens]              # [seq, dim] — embedding row lookup, no quantisation
+
+    for l in range(n_layers):
+        h = _rmsnorm(x, w[f"attn_norm.{l}"])
+        hq = _quantize_act(h)                    # ← activation quantisation
+
+        q = hq @ w[f"wq.{l}"].T
+        k = hq @ w[f"wk.{l}"].T
+        v = hq @ w[f"wv.{l}"].T
+
+        q = q.view(seq, n_heads,  head_dim)
+        k = k.view(seq, kv_heads, head_dim)
+        v = v.view(seq, kv_heads, head_dim)
+
+        q, k = _apply_rope(q, k, freqs_cis)
+
+        if n_rep > 1:
+            k = k.repeat_interleave(n_rep, dim=1)
+            v = v.repeat_interleave(n_rep, dim=1)
+
+        q = q.transpose(0, 1)
+        k = k.transpose(0, 1)
+        v = v.transpose(0, 1)
+
+        scores = q @ k.transpose(-2, -1) / math.sqrt(head_dim)
+        mask   = torch.full((seq, seq), float("-inf")).triu(1)
+        scores = scores + mask
+        attn   = F.softmax(scores.float(), dim=-1).type_as(q)
+        out    = (attn @ v).transpose(0, 1).contiguous().view(seq, dim)
+
+        outq = _quantize_act(out)                # ← quantise before wo projection
+        x = x + outq @ w[f"wo.{l}"].T
+
+        h     = _rmsnorm(x, w[f"ffn_norm.{l}"])
+        hq    = _quantize_act(h)                 # ← quantise before FFN projections
+        gate  = F.silu(hq @ w[f"w1.{l}"].T)
+        up    = hq @ w[f"w3.{l}"].T
+        ffnq  = _quantize_act(gate * up)         # ← quantise before w2
+        x     = x + ffnq @ w[f"w2.{l}"].T
+
+    x      = _rmsnorm(x, w["norm"])
+    xq     = _quantize_act(x)                   # ← quantise before logit projection
+    logits = xq @ w["tok_embeddings"].T          # tied weights
+    return logits
+
+
 # ── PPL computation — sentence corpus ────────────────────────────────────────
 
 def compute_ppl_sentences(
@@ -213,7 +309,8 @@ def compute_ppl_sentences(
     max_seq: int = 256,
 ) -> tuple[float, float]:
     """Return (mean_nll, ppl) over a list of text sentences."""
-    freqs_cis = _precompute_rope(config["dim"] // config["n_heads"], max_seq)
+    freqs_cis  = _precompute_rope(config["dim"] // config["n_heads"], max_seq)
+    fwd        = forward_pctle if config.get("pctle") else forward
     total_nll, total_tok = 0.0, 0
 
     with torch.no_grad():
@@ -223,7 +320,7 @@ def compute_ppl_sentences(
                 continue
             ids    = ids[:max_seq]
             tokens = torch.tensor(ids, dtype=torch.long)
-            logits = forward(tokens, weights, config, freqs_cis)
+            logits = fwd(tokens, weights, config, freqs_cis)
             lp     = F.log_softmax(logits[:-1].float(), dim=-1)
             tgt    = tokens[1:]
             nll    = -lp[range(len(tgt)), tgt].sum().item()
@@ -256,6 +353,7 @@ def compute_ppl_tokens(
         stride = max_seq            # default: non-overlapping
 
     freqs_cis  = _precompute_rope(config["dim"] // config["n_heads"], max_seq)
+    fwd        = forward_pctle if config.get("pctle") else forward
     total_nll, total_tok = 0.0, 0
     n_all      = len(all_ids)
     n_windows  = max(1, (n_all - 1 - max_seq) // stride + 1)
@@ -270,7 +368,7 @@ def compute_ppl_tokens(
             if len(chunk) < 2:
                 break
             tokens = torch.tensor(chunk, dtype=torch.long)
-            logits = forward(tokens, weights, config, freqs_cis)
+            logits = fwd(tokens, weights, config, freqs_cis)
 
             # When overlapping, only score the NEW tokens (stride tokens from end)
             if stride < max_seq and win > 0:

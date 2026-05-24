@@ -4,60 +4,36 @@
 %
 % Usage: \input{tables/table_ablation}
 
-\begin{table*}[t]
+\begin{table}[t]
 \centering
-\caption{Quantization method comparison on TinyStories-15M.
-         All CTLE/INT4 methods use 4-bit weight storage.
-         CTLE uses $k{=}16$ codebook entries per tensor;
-         INT4U uses one global scale per tensor;
-         INT4BW uses one scale per group of $G{=}32$ columns
-         ($\approx$5\,bits/weight effective).
-         NLL and PPL\,(TS) are evaluated on our 10-sentence TinyStories corpus
-         (192 tokens scored).
-         PPL\,(WT2) is evaluated on the WikiText-2 test split
-         (325,693 tokens, non-overlapping windows of 256 tokens, stride\,=\,256).
-         Both corpora use the LLaMA SentencePiece tokenizer.
-         \textbf{Important:} TinyStories-15M was trained on children-story text,
-         not Wikipedia; WikiText-2 PPL values reflect domain mismatch as well as
-         compression error and are \emph{not} directly comparable to numbers
-         reported for general-purpose LLMs (OPT, LLaMA).
-         $\dagger$~PSO/GA use K-means warm start.}
+\footnotesize
+\caption{Compression and quality ablation on TinyStories-15M.}
 \label{tab:ablation}
-\setlength{\tabcolsep}{5pt}
+\setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lcccccccc}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Method} & \textbf{Bits/w} & \textbf{Size (MB)} & \textbf{Ratio} &
-\textbf{NLL\,$\downarrow$} & \textbf{PPL (TS)\,$\downarrow$} &
-\textbf{PPL (WT2)\,$\downarrow$} & \textbf{Time (s)} \\
+\textbf{Method} & \textbf{Bits} & \textbf{MB} &
+\textbf{PPL TS} & \textbf{PPL WT2} & \textbf{Comp. s} \\
 \midrule
-FP32 (baseline)     & 32   & 60.77 & $1.00\times$  & 2.236 & \phantom{00}9.35  & \phantom{0}6{,}127  & —     \\
+FP32                & 32   & 60.77 & \phantom{00}9.35 & \phantom{0}6{,}127 & — \\
 \midrule
-\multicolumn{8}{l}{\textit{Standard INT4 quantization (baselines)}} \\
-INT4 Uniform        &  4   &  7.61 & $7.99\times$  & 9.312 & 11{,}070          & 533{,}069           & \phantom{0}${<}1$ \\
-INT4 Block-wise     & $\approx$5 & 9.51 & $6.39\times$ & 2.371 & \textbf{10.71} & \textbf{\phantom{0}7{,}120} & \phantom{0}${<}1$ \\
+INT4U               & 4    &  7.61 & 11{,}070 & 533{,}069 & ${<}1$ \\
+INT4BW              & $\sim$5 & 9.51 & \textbf{10.71} & \textbf{7{,}120} & ${<}1$ \\
 \midrule
-\multicolumn{8}{l}{\textit{CTLE — learned codebook (this work)}} \\
-CTLE + K-means      &  4   &  7.61 & $7.98\times$  & 2.957 & 19.23           & 19{,}239            & \phantom{0}73.6 \\
-CTLE + GA$^\dagger$     &  4   &  7.61 & $7.98\times$  & 2.944 & 18.98           & 19{,}114            & 207.7 \\
-CTLE + PSO$^\dagger$    &  4   &  7.61 & $7.98\times$  & 2.768 & 15.93           & 16{,}827            & 198.3 \\
+CTLE-KM             & 4    &  7.61 & 19.23 & 19{,}239 & 73.6 \\
+CTLE-GA$^\dagger$   & 4    &  7.61 & 18.98 & 19{,}114 & 207.7 \\
+CTLE-PSO$^\dagger$  & 4    &  7.61 & 15.93 & 16{,}827 & 198.3 \\
+P-CTLE$^{\dagger\ddagger}$ & 4 & 7.61 & 33.14 & 29{,}049 & 181.4 \\
 \bottomrule
 \end{tabular}
 %
 \smallskip
-\begin{minipage}{\textwidth}
+\begin{minipage}{0.98\columnwidth}
   \footnotesize
-  \textbf{INT4U collapses} (PPL\,$>$11\,000 / 533\,000) because a single global scale
-  cannot represent the heterogeneous distribution of the 9.2\,M-entry embedding matrix.
-  \textbf{INT4BW} recovers near-FP32 quality
-  (TS: $+14.5\,\%$; WT2: $+16.2\,\%$ vs.\ FP32) at the cost of 25\,\% larger footprint
-  (9.51\,MB vs.\ 7.61\,MB) and a 31\,\% throughput penalty on RISC-V
-  (see Table~\ref{tab:hw}).
-  \textbf{CTLE-PSO} achieves competitive PPL at identical 4-bit storage and
-  streams weights directly from Flash with a fixed 64-byte LUT per tensor,
-  eliminating per-group scale-table overhead at inference time.
-  PSO reduces PPL by \textbf{17.2\,\%} vs.\ K-means on TinyStories and
-  \textbf{12.5\,\%} on WikiText-2, confirming the improvement is
-  corpus-independent.
+  TS is the 192-token TinyStories probe; WT2 is WikiText-2 with 256-token
+  non-overlapping windows. ``Comp. s'' is offline model compression time and
+  excludes runtime product-LUT rebuilds. $\dagger$~uses K-means warm start.
+  $\ddagger$~also quantises activations to 4 bits at runtime.
 \end{minipage}
-\end{table*}
+\end{table}

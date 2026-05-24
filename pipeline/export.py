@@ -58,10 +58,11 @@ import numpy as np
 
 MAGIC    = 0x454C5443  # "CTLE"
 VERSION  = 2
-TAG_F32   = 0
-TAG_CTLE  = 1
-TAG_INT4U = 2   # INT4 Uniform  (per-tensor scale)
-TAG_INT4BW = 3  # INT4 Block-wise (per-row-group scale, G=32)
+TAG_F32    = 0
+TAG_CTLE   = 1
+TAG_INT4U  = 2   # INT4 Uniform  (per-tensor scale)
+TAG_INT4BW = 3   # INT4 Block-wise (per-row-group scale, G=32)
+TAG_PCTLE  = 4   # Product-LUT CTLE — same data layout as CTLE, tag=4
 
 
 def _pack_nibbles(indices: np.ndarray) -> bytes:
@@ -89,6 +90,17 @@ def _write_ctle_block(f, lut: np.ndarray, indices: np.ndarray) -> None:
     f.write(struct.pack("<II", rows, cols))
     f.write(lut32.tobytes())              # 64 bytes
     f.write(_pack_nibbles(indices))       # ceil(rows*cols/2) bytes
+
+
+def _write_pctle_block(f, lut: np.ndarray, indices: np.ndarray) -> None:
+    """Write a P-CTLE block — identical data layout as CTLE but tag=4."""
+    rows, cols = indices.shape
+    lut32 = lut.astype(np.float32)
+
+    f.write(struct.pack("<B", TAG_PCTLE))
+    f.write(struct.pack("<II", rows, cols))
+    f.write(lut32.tobytes())              # 64 bytes (weight LUT)
+    f.write(_pack_nibbles(indices))       # ceil(rows*cols/2) bytes (weight nibbles)
 
 
 def _write_int4u_block(f, scale: float, nibbles: np.ndarray) -> None:
@@ -165,6 +177,9 @@ def write_ctle_bin(
                 elif kind == "int4bw":
                     _, scales, nibbles, group_size = val
                     _write_int4bw_block(f, scales, nibbles, group_size)
+                elif kind == "pctle":
+                    _, lut, indices = val
+                    _write_pctle_block(f, lut, indices)
                 else:
                     # Legacy CTLE tuple: (lut [16], indices [M,N])
                     lut, indices = val

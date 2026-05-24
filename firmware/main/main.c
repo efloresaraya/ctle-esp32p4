@@ -57,7 +57,9 @@ static const char *TAG = "CTLE";
 #define TAG_CTLE      1u
 #define TAG_INT4U     2u   /* INT4 Uniform  — one scale per tensor   */
 #define TAG_INT4BW    3u   /* INT4 Block-wise — one scale per G=32 cols */
+#define TAG_PCTLE     4u   /* Product-LUT CTLE — same data as CTLE, no mul in inner loop */
 #define INT4_OFFSET   7    /* stored nibble = signed_q + 7 */
+#define PCTLE_LEVELS  16   /* activation quantisation levels (4-bit = 16) */
 
 /* ─── Hardcoded benchmark prompts (pre-tokenized via SentencePiece) ──────── */
 /* "Once upon a time" */
@@ -138,6 +140,12 @@ static size_t  g_psram_runstate_kb = 0;       /* free after KV-cache + RoPE allo
 static size_t  g_psram_model_kb  = 0;         /* free after full model loaded       */
 static size_t  g_sram_total_kb   = 0;         /* internal SRAM total (at boot)      */
 
+/* P-CTLE scratch buffers — static to avoid stack overflow.
+ * Inference is single-threaded; no mutex needed.
+ * Max cols = hidden_dim = 768.                                              */
+static uint8_t s_pctle_a_idx[768];   /* activation indices per GEMV call   */
+static float   s_pctle_lut_p[256];   /* product LUT = lut_a ⊗ lut_w        */
+
 /* Auto-detect compression format from the tok_emb tensor tag.
  * NOTE: CTLE variants (K-means / GA / PSO) all write TAG_CTLE and are
  * indistinguishable at runtime — their inference timings are therefore
@@ -146,6 +154,7 @@ static void detect_method(void)
 {
     switch (g_model.tok_emb.tag) {
         case TAG_CTLE:   snprintf(g_method_name, sizeof(g_method_name), "CTLE");   break;
+        case TAG_PCTLE:  snprintf(g_method_name, sizeof(g_method_name), "PCTLE");  break;
         case TAG_INT4U:  snprintf(g_method_name, sizeof(g_method_name), "INT4U");  break;
         case TAG_INT4BW: snprintf(g_method_name, sizeof(g_method_name), "INT4BW"); break;
         case TAG_F32:    snprintf(g_method_name, sizeof(g_method_name), "FP32");   break;
@@ -176,7 +185,9 @@ static esp_err_t read_block(FILE *f, WeightBlock *b)
         if (!b->f32) { ESP_LOGE(TAG, "OOM F32 %lu", (unsigned long)count); return ESP_ERR_NO_MEM; }
         fread(b->f32, sizeof(float), count, f);
         b->nibbles = NULL; b->scales = NULL;
-    } else if (tag == TAG_CTLE) {
+    } else if (tag == TAG_CTLE || tag == TAG_PCTLE) {
+        /* P-CTLE has identical data layout to CTLE (lut[16] + packed nibbles).
+         * The tag byte is the only difference; runtime kernel is selected later. */
         if (fread(&b->rows, 4, 1, f) != 1) return ESP_FAIL;
         if (fread(&b->cols, 4, 1, f) != 1) return ESP_FAIL;
         fread(b->lut, sizeof(float), 16, f);
@@ -328,6 +339,69 @@ static void ctle_matvec(const WeightBlock *wb, const float *x, float *y,
     }
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+ * P-CTLE matvec — Product-LUT Compressed Tensor-Linear Engine
+ *
+ * Replaces MAC (acc += x * w) with Product-Lookup-Accumulate:
+ *   acc += LUT_p[(a_idx << 4) | w_idx]
+ *
+ * Steps per GEMV call:
+ *   1. Quantise x[cols] → a_idx[cols] uniform 16-level (O(N), no mul)
+ *   2. Build LUT_p[256] = outer_product(LUT_a, LUT_w)  (256 muls, amortised)
+ *   3. Inner loop: addr = (a_idx[c]<<4)|w_idx → acc += LUT_p[addr]  (0 muls)
+ *
+ * Static scratch buffers used (no stack overflow risk):
+ *   s_pctle_a_idx[768]   activation indices
+ *   s_pctle_lut_p[256]   product LUT (float32, 1 KB)
+ * ════════════════════════════════════════════════════════════════════════════ */
+static void pctle_matvec(const WeightBlock *wb, const float *x, float *y,
+                         int rows, int cols)
+{
+    /* 1 ── Quantise activations → a_idx + LUT_a (uniform min-max, 16 levels) */
+    float x_min = x[0], x_max = x[0];
+    for (int c = 1; c < cols; c++) {
+        if (x[c] < x_min) x_min = x[c];
+        if (x[c] > x_max) x_max = x[c];
+    }
+    float step = (x_max - x_min) / (float)(PCTLE_LEVELS - 1);
+    if (step < 1e-8f) step = 1e-8f;
+    float inv_step = 1.0f / step;
+
+    float lut_a[PCTLE_LEVELS];
+    for (int k = 0; k < PCTLE_LEVELS; k++)
+        lut_a[k] = x_min + k * step;
+    for (int c = 0; c < cols; c++) {
+        int idx = (int)((x[c] - x_min) * inv_step + 0.5f);
+        if (idx < 0)             idx = 0;
+        if (idx >= PCTLE_LEVELS) idx = PCTLE_LEVELS - 1;
+        s_pctle_a_idx[c] = (uint8_t)idx;
+    }
+
+    /* 2 ── Build product LUT: 256 multiplications, done once per GEMV */
+    const float *lut_w = wb->lut;
+    for (int a = 0; a < PCTLE_LEVELS; a++)
+        for (int w = 0; w < PCTLE_LEVELS; w++)
+            s_pctle_lut_p[(a << 4) | w] = lut_a[a] * lut_w[w];
+
+    /* 3 ── Inner loop: lookup-accumulate — zero multiplications */
+    const uint8_t *nibbles = wb->nibbles;
+    int byte_idx = 0;
+    for (int r = 0; r < rows; r++) {
+        float acc = 0.0f;
+        int c = 0;
+        for (; c + 1 < cols; c += 2) {
+            uint8_t b  = nibbles[byte_idx++];
+            acc += s_pctle_lut_p[(s_pctle_a_idx[c]   << 4) | (b & 0x0F)];
+            acc += s_pctle_lut_p[(s_pctle_a_idx[c+1] << 4) | (b >>   4)];
+        }
+        if (c < cols) {
+            uint8_t b = nibbles[byte_idx++];
+            acc += s_pctle_lut_p[(s_pctle_a_idx[c] << 4) | (b & 0x0F)];
+        }
+        y[r] = acc;
+    }
+}
+
 static void f32_matvec(const float *W, const float *x, float *y, int rows, int cols)
 {
     for (int r = 0; r < rows; r++) {
@@ -400,6 +474,7 @@ static void matvec(const WeightBlock *wb, const float *x, float *y)
     int rows = (int)wb->rows, cols = (int)wb->cols;
     switch (wb->tag) {
         case TAG_CTLE:   ctle_matvec(wb, x, y, rows, cols);      break;
+        case TAG_PCTLE:  pctle_matvec(wb, x, y, rows, cols);     break;
         case TAG_INT4U:  int4u_matvec(wb, x, y, rows, cols);     break;
         case TAG_INT4BW: int4bw_matvec(wb, x, y, rows, cols);    break;
         default:         f32_matvec(wb->f32, x, y, rows, cols);  break;
@@ -450,7 +525,8 @@ static void transformer_forward(int token, int pos)
         const WeightBlock *emb = &g_model.tok_emb;
         int cols = (int)emb->cols;
         int base = token * cols;
-        if (emb->tag == TAG_CTLE) {
+        if (emb->tag == TAG_CTLE || emb->tag == TAG_PCTLE) {
+            /* Embedding lookup is a row-select — no activation to quantise */
             const float   *lut = emb->lut;
             const uint8_t *nb  = emb->nibbles;
             for (int c = 0; c < cols; c++) {
@@ -556,6 +632,48 @@ static void transformer_forward(int token, int pos)
                     uint8_t b   = nb[bi];
                     uint8_t idx = ((base + c) & 1) ? (b >> 4) : (b & 0x0F);
                     acc += lut[idx] * s->xb[c];
+                }
+                s->logits[v] = acc;
+            }
+        } else if (emb->tag == TAG_PCTLE) {
+            /* Logits via P-CTLE: quantise xb[cols], build product LUT,
+             * then lookup-accumulate for all vocab rows (zero muls in loop) */
+            float x_min = s->xb[0], x_max = s->xb[0];
+            for (int c = 1; c < cols; c++) {
+                if (s->xb[c] < x_min) x_min = s->xb[c];
+                if (s->xb[c] > x_max) x_max = s->xb[c];
+            }
+            float step = (x_max - x_min) / (float)(PCTLE_LEVELS - 1);
+            if (step < 1e-8f) step = 1e-8f;
+            float inv_step = 1.0f / step;
+            float lut_a[PCTLE_LEVELS];
+            for (int k = 0; k < PCTLE_LEVELS; k++)
+                lut_a[k] = x_min + k * step;
+            /* a_idx lives in static scratch (cols = MODEL_DIM = 288 ≤ 768) */
+            for (int c = 0; c < cols; c++) {
+                int idx = (int)((s->xb[c] - x_min) * inv_step + 0.5f);
+                if (idx < 0)             idx = 0;
+                if (idx >= PCTLE_LEVELS) idx = PCTLE_LEVELS - 1;
+                s_pctle_a_idx[c] = (uint8_t)idx;
+            }
+            const float *lut_w = emb->lut;
+            for (int a = 0; a < PCTLE_LEVELS; a++)
+                for (int w = 0; w < PCTLE_LEVELS; w++)
+                    s_pctle_lut_p[(a << 4) | w] = lut_a[a] * lut_w[w];
+            const uint8_t *nb = emb->nibbles;
+            for (int v = 0; v < MODEL_VOCAB; v++) {
+                float acc = 0.0f;
+                int   base = v * cols;
+                int   c    = 0;
+                for (; c + 1 < cols; c += 2) {
+                    int     bi = (base + c) / 2;
+                    uint8_t b  = nb[bi];
+                    acc += s_pctle_lut_p[(s_pctle_a_idx[c]   << 4) | (b & 0x0F)];
+                    acc += s_pctle_lut_p[(s_pctle_a_idx[c+1] << 4) | (b >>   4)];
+                }
+                if (c < cols) {
+                    uint8_t b = nb[(base + c) / 2];
+                    acc += s_pctle_lut_p[(s_pctle_a_idx[c] << 4) | (b & 0x0F)];
                 }
                 s->logits[v] = acc;
             }

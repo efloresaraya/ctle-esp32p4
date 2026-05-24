@@ -12,11 +12,13 @@ Usage:
         --method kmeans        # default
         --method ga            # Genetic Algorithm (slower, better)
         --method pso           # Particle Swarm (slower, often better)
-        --hw-aware             # add INT8 fixed-point penalty (GA/PSO only)
+        --method de            # Differential Evolution (slower, often better)
+        --method pctle_de      # P-CTLE with DE-optimised weight codebooks
+        --hw-aware             # add INT8 fixed-point penalty (GA/PSO/DE only)
 
 The script:
   1. Loads all tensors from the safetensors file.
-  2. Applies codebook quantization (K-means, GA, or PSO) to all large
+  2. Applies codebook quantization (K-means, GA, PSO, or DE) to all large
      weight matrices (embedding + attention + FFN projections).
   3. Keeps small tensors (RMSNorm gains) in full FP32.
   4. Writes the CTLE binary format v2 (see pipeline/export.py for spec).
@@ -37,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pipeline.quantize import kmeans_codebook, reconstruction_error
 from pipeline.ga       import ga_codebook
 from pipeline.pso      import pso_codebook
+from pipeline.de       import de_codebook
 from pipeline.int4     import (int4_uniform, int4_blockwise,
                                 reconstruction_error_int4u,
                                 reconstruction_error_int4bw,
@@ -47,8 +50,9 @@ from pipeline.export   import write_ctle_bin
 # Tensors with fewer elements than this threshold are kept as FP32
 _SMALL_TENSOR_THRESHOLD = 1_024   # e.g. RMSNorm gains [dim=288]
 
-_METHODS = ("kmeans", "ga", "pso", "int4_uniform", "int4_blockwise")
-_INT4_METHODS = {"int4_uniform", "int4_blockwise"}
+_METHODS = ("kmeans", "ga", "pso", "de", "int4_uniform", "int4_blockwise", "pctle", "pctle_de")
+_INT4_METHODS  = {"int4_uniform", "int4_blockwise"}
+_PCTLE_METHODS = {"pctle", "pctle_de"}   # P-CTLE: optimized weights + TAG_PCTLE
 
 
 def load_safetensors(path: Path) -> dict[str, np.ndarray]:
@@ -90,6 +94,14 @@ def _quantize_ctle(
             hw_aware=hw_aware,
             seed=seed,
         )
+    elif method == "de":
+        return de_codebook(
+            w2d,
+            k=k,
+            warm_start=warm_cb,
+            hw_aware=hw_aware,
+            seed=seed,
+        )
     else:
         raise ValueError(f"Unknown method: {method!r}")
 
@@ -105,8 +117,9 @@ def compress(
 ) -> None:
     t0 = time.perf_counter()
 
-    is_int4 = method in _INT4_METHODS
-    hw_tag = " +HW" if (hw_aware and method not in ("kmeans",) | _INT4_METHODS) else ""
+    is_int4  = method in _INT4_METHODS
+    is_pctle = method in _PCTLE_METHODS
+    hw_tag = " +HW" if (hw_aware and method not in {"kmeans"} | _INT4_METHODS) else ""
     print(f"\n{'='*64}")
     print(f"  CTLE Compression Pipeline")
     print(f"{'='*64}")
@@ -115,7 +128,11 @@ def compress(
     print(f"  Output  : {output_path}")
     if not is_int4:
         print(f"  K       : {k} centroids (4-bit)")
-    print(f"  Method  : {method.upper()}{hw_tag}")
+    method_label = {
+        "pctle": "PCTLE (PSO weight opt + product-LUT tag)",
+        "pctle_de": "PCTLE-DE (DE weight opt + product-LUT tag)",
+    }.get(method, method.upper())
+    print(f"  Method  : {method_label}{hw_tag}")
     if not is_int4:
         print(f"  Seed    : {seed}\n")
     else:
@@ -165,6 +182,17 @@ def compress(
             total_ctle_bytes += q_bytes
             shape_str = str(weights.shape)
             print(f"  {name:<50} {shape_str:<20} {'INT4BW':<6} {rel_mse:>10.6f}")
+        elif is_pctle:
+            # P-CTLE: optimize weight codebook, write TAG_PCTLE for runtime product-LUT.
+            w2d = weights.reshape(weights.shape[0], -1).astype(np.float32)
+            weight_method = "de" if method == "pctle_de" else "pso"
+            codebook, indices = _quantize_ctle(w2d, k, weight_method, hw_aware, seed)
+            rel_mse = reconstruction_error(w2d, codebook, indices)
+            processed[name] = ("pctle", codebook, indices)
+            ctle_bytes = 64 + (w2d.shape[0] * w2d.shape[1] + 1) // 2
+            total_ctle_bytes += ctle_bytes
+            shape_str = str(weights.shape)
+            print(f"  {name:<50} {shape_str:<20} {'PCTLE':<6} {rel_mse:>10.6f}")
         else:
             w2d = weights.reshape(weights.shape[0], -1).astype(np.float32)
             codebook, indices = _quantize_ctle(w2d, k, method, hw_aware, seed)
@@ -205,9 +233,9 @@ def main() -> None:
     parser.add_argument("--k",        type=int, default=16,
                         help="Codebook size (default 16)")
     parser.add_argument("--method",   choices=_METHODS, default="kmeans",
-                        help="Codebook optimizer: kmeans | ga | pso | int4_uniform | int4_blockwise  (default: kmeans)")
+                        help="Codebook optimizer: kmeans | ga | pso | de | int4_uniform | int4_blockwise | pctle | pctle_de  (default: kmeans)")
     parser.add_argument("--hw-aware", action="store_true",
-                        help="GA/PSO: add INT8 fixed-point penalty (hardware-aware)")
+                        help="GA/PSO/DE: add INT8 fixed-point penalty (hardware-aware)")
     parser.add_argument("--seed",     type=int, default=42,
                         help="RNG seed for GA/PSO (default 42)")
     args = parser.parse_args()

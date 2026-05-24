@@ -7,61 +7,36 @@
 % Our WT2 PPL: domain mismatch (TinyStories training) + compression error.
 % Usage: \input{tables/table_sota}
 
-\begin{table*}[t]
+\begin{table}[t]
 \centering
-\caption{Comparison with representative post-training compression methods.
-         \textbf{PPL\,(WT2)} values in the top block are from the original papers,
-         evaluated on their own general-purpose models (OPT-125M, LLaMA-7B)
-         trained on Wikipedia/web data.
-         Our PPL\,(WT2) values in the lower block use TinyStories-15M
-         (trained on children-story text) and the LLaMA SentencePiece tokenizer
-         (non-overlapping windows, stride\,=\,256);
-         they reflect domain mismatch and are \emph{not} directly comparable
-         to the top block.
-         PPL\,(TS) is on our 10-sentence TinyStories corpus (in-distribution).
-         $\ddagger$~FP32 footprint of counted tensors;
-         $\star$~compression vs.\ FP32.}
+\footnotesize
+\caption{Representative compression methods and deployment targets. WT2 PPL is
+shown to identify the evaluation domain, not to rank different base models.}
 \label{tab:sota}
-\setlength{\tabcolsep}{4pt}
+\setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{llccccccccc}
+\begin{tabular}{lcccr}
 \toprule
-\textbf{Method} & \textbf{Model} & \textbf{Bits/w} & \textbf{Size} &
-\textbf{Ratio$^\star$} & \textbf{PPL\,(WT2)\,$\downarrow$} &
-\textbf{PPL\,(TS)\,$\downarrow$} & \textbf{HW} &
-\textbf{Flash-} & \textbf{Meta-} \\
- & & & & & & & \textbf{target} & \textbf{stream} & \textbf{heuristic} \\
+\textbf{Method} & \textbf{Bits} & \textbf{Model} &
+\textbf{Target} & \textbf{WT2 PPL} \\
 \midrule
-\multicolumn{10}{l}{\textit{GPU-targeted methods — PPL on OPT-125M or LLaMA-7B (not comparable to ours)}} \\
-GPTQ~\cite{frantar2023gptq}        & OPT-125M  & 4    & $\sim$15\,MB    & $\sim 8\times$ & 31.12                & —    & GPU & \texttimes & \texttimes \\
-SqueezeLLM~\cite{kim2024squeezellm}& LLaMA-7B  & 3.45 & $\sim$3.5\,GB   & $\sim 4\times$ & \phantom{0}5.79      & —    & GPU & \texttimes & \texttimes \\
-LLM.int8()~\cite{dettmers2022llmint8}& OPT-$\geq$6.7B & 8 & $\sim 2\times$ red. & $\sim 2\times$ & $\approx$FP16 & — & GPU & \texttimes & \texttimes \\
+GPTQ~\cite{frantar2023gptq} & 4 & OPT-125M & GPU & 31.12 \\
+SqueezeLLM~\cite{kim2024squeezellm} & 3.45 & LLaMA-7B & GPU & 5.79 \\
+LLM.int8()~\cite{dettmers2022llmint8} & 8 & OPT/LLaMA & GPU & $\approx$FP16 \\
 \midrule
-\multicolumn{10}{l}{\textit{Our methods — TinyStories-15M, MCU target (PPL WT2 reflects domain mismatch)}} \\
-FP32 (ours)               & TinyStories-15M & 32   & 60.8\,MB$^\ddagger$ & $1\times$      & \phantom{0}6{,}127   & \phantom{0}9.35  & MCU     & \texttimes & \texttimes \\
-INT4 Uniform (ours)       & TinyStories-15M & 4    & 7.61\,MB        & $7.99\times$   & 533{,}069            & 11{,}070         & \textbf{MCU} & \checkmark & \texttimes \\
-INT4 Block-wise (ours)    & TinyStories-15M & $\approx$5 & 9.51\,MB  & $6.39\times$   & \phantom{0}7{,}120   & \phantom{0}10.71 & \textbf{MCU} & \checkmark & \texttimes \\
-CTLE + K-means (ours)     & TinyStories-15M & 4    & 7.61\,MB        & $7.98\times$   & \phantom{0}19{,}239  & \phantom{0}19.23 & \textbf{MCU} & \checkmark & \texttimes \\
-CTLE + GA (ours)          & TinyStories-15M & 4    & 7.61\,MB        & $7.98\times$   & \phantom{0}19{,}114  & \phantom{0}18.98 & \textbf{MCU} & \checkmark & \checkmark \\
-\textbf{CTLE + PSO (ours)}& TinyStories-15M & \textbf{4} & \textbf{7.61\,MB} & $\mathbf{7.98\times}$ & \phantom{0}\textbf{16{,}827} & \phantom{0}\textbf{15.93} & \textbf{MCU} & \checkmark & \checkmark \\
+FP32 (ours) & 32 & TinyStories-15M & MCU & 6{,}127 \\
+INT4BW (ours) & $\sim$5 & TinyStories-15M & MCU & 7{,}120 \\
+CTLE-PSO (ours) & 4 & TinyStories-15M & MCU & 16{,}827 \\
+P-CTLE (ours) & 4 & TinyStories-15M & MCU/NPU & 29{,}049 \\
 \bottomrule
 \end{tabular}
 \smallskip
-\begin{minipage}{\textwidth}
+\begin{minipage}{0.98\columnwidth}
   \footnotesize
-  \textbf{Why WT2 PPL differs across blocks.}
-  GPTQ/SqueezeLLM/LLM.int8() evaluate on models trained on general text
-  (Wikipedia, CommonCrawl), so their WikiText-2 PPL is low (5–31).
-  TinyStories-15M was trained exclusively on simple children's stories;
-  its FP32 WikiText-2 PPL of 6{,}127 reflects out-of-distribution evaluation,
-  not a deficiency of the compression method.
-  Within our block, the PPL ordering across compression methods
-  is valid and consistent with the TinyStories results.
-
-  \textbf{Flash-stream}: inference reads nibbles and LUT/scale directly from Flash
-  without reconstructing dense weight matrices in RAM
-  (LUT~=~64\,B; only activations and KV cache are allocated in PSRAM).
-  GPU methods require full VRAM residency.
-  CTLE runs on ESP32-P4 Nano (RISC-V HP\,@360\,MHz, 32\,MB PSRAM, 16\,MB Flash).
+  Top rows use their original general-purpose models. Our rows use
+  TinyStories-15M, whose FP32 WT2 PPL is already high because it was trained
+  on children's stories rather than Wikipedia. The relevant comparison is
+  deployment: CTLE streams packed weights on an MCU without reconstructing
+  dense matrices in SRAM.
 \end{minipage}
-\end{table*}
+\end{table}

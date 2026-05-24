@@ -8,16 +8,17 @@
 % RelMSE = MSE / (mean(w^2) + eps)  — relative reconstruction error
 %
 % Usage: \input{tables/table_relmse}
-% Requires: booktabs, multirow
+% Requires: booktabs
 
 \begin{table}[t]
 \centering
+\footnotesize
 \caption{Per-tensor relative reconstruction error (RelMSE) for selected tensors,
          $k{=}16$ centroids. Bold = best per row. The embedding matrix
          (\texttt{tok\_emb}) is the largest tensor (32\,K$\times$288\,=\,9.2\,M weights)
          and the primary contributor to PPL improvement under PSO.}
 \label{tab:relmse}
-\setlength{\tabcolsep}{7pt}
+\setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lrrrr}
 \toprule
