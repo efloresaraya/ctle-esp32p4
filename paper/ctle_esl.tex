@@ -5,8 +5,14 @@
 \usepackage{amsmath,amsfonts,amssymb}
 \usepackage{algorithm}
 \usepackage{algorithmic}
+\usepackage{tikz}
+\usetikzlibrary{shapes,shadows,positioning,calc,arrows.meta,patterns}
 \usepackage{cite}
 \usepackage{url}
+\definecolor{techBlue}{RGB}{230,240,255}
+\definecolor{techOrange}{RGB}{255,245,220}
+\definecolor{techGreen}{RGB}{220,250,230}
+\definecolor{lineGray}{RGB}{80,80,80}
 
 \begin{document}
 
@@ -130,55 +136,86 @@ The 16-entry LUT is 64\,B, small enough to remain register- or cache-resident
 during the row loop. As shown in Fig.~\ref{fig:ctle_arch}, no dense copy of $W$
 is reconstructed in SRAM or PSRAM.
 
-The binary format contains a 40-byte model header followed by tensor blocks.
-Small tensors (RMSNorm gains) remain FP32; large tensors (token embedding and
-all attention/FFN projections) are stored as CTLE, INT4U, INT4BW, or P-CTLE
-blocks. This common firmware path enables fair hardware comparison because all
-methods share the same transformer code and differ only in weight-block
-decoding (Table~\ref{tab:format}).
+The binary format contains a 40-byte model header followed by tensor blocks
+tagged as FP32\,(0), CTLE\,(1), INT4U\,(2), INT4BW\,(3), or P-CTLE\,(4).
+A single tag-switch selects the matvec kernel; all formats share the same
+transformer forward-pass code, ensuring a fair hardware comparison.
+Fig.~\ref{fig:representation} contrasts the transient-RAM cost of each class.
 
 \begin{figure}[t]
 \centering
-\footnotesize
-\setlength{\fboxsep}{4pt}
-\fbox{\begin{minipage}{0.93\columnwidth}
-\centering
-\begin{tabular}{c}
-\textbf{Compressed weights in Flash/PSRAM} \\
-\scriptsize 16-entry LUT $L$ + packed 4-bit indices \\
-$\downarrow$ \\
-\textbf{Streaming CTLE matvec kernel} \\
-\scriptsize unpack nibble $\rightarrow$ LUT lookup $\rightarrow$
-$\mathrm{acc}{+}=L[\mathrm{idx}]\,x_n$ \\
-$\downarrow$ \\
-\textbf{Output activation} \\
-\scriptsize no dense dequantized weight buffer in SRAM/PSRAM
-\end{tabular}
-\end{minipage}}
-\caption{CTLE compressed-domain execution: packed indices stream into the
-matvec kernel without reconstructing dense weight matrices.}
+\begin{tikzpicture}[
+    scale=0.60, transform shape,
+    font=\footnotesize,
+    box/.style={draw, thick, rounded corners=4pt, align=center,
+        minimum width=3.5cm, minimum height=1.5cm, inner sep=4pt,
+        drop shadow={opacity=0.2,shadow xshift=2pt,shadow yshift=-2pt}},
+    data/.style={box, fill=techBlue, draw=techBlue!60!black},
+    memory/.style={box, fill=techOrange, draw=techOrange!60!black},
+    compute/.style={box, fill=techGreen, draw=techGreen!60!black},
+    link/.style={->,>=Stealth,ultra thick,color=lineGray,rounded corners=4pt},
+    lbl/.style={font=\scriptsize\itshape,fill=white,inner sep=1.5pt,fill opacity=0.9}
+]
+\node[compute] (engine) at (0,0)
+    {\textbf{CTLE kernel}\\[-1pt]\scriptsize LUT lookup + accumulate};
+\node[data]    (x)      at (-4.5,0)
+    {\textbf{Activations}\\[-1pt]$\mathbf{x}\!\in\!\mathbb{R}^N$};
+\node[data]    (y)      at ( 4.5,0)
+    {\textbf{Output}\\[-1pt]$\mathbf{y}\!=\!W\mathbf{x}$};
+\node[memory]  (w)      at (0,2.8)
+    {\textbf{Flash/PSRAM}\\[-1pt]\scriptsize LUT (64\,B) + 4-bit indices};
+\draw[link] (x.east) -- node[lbl,above=2pt]{activations} (engine.west);
+\draw[link] (w.south) -- node[lbl,right=1pt]{stream indices} (engine.north);
+\draw[link] (engine.east) -- node[lbl,above=2pt]{results} (y.west);
+\node[above=0.08cm of w,   color=techOrange!60!black,font=\scriptsize\bfseries]
+    {no reconstruction buffer};
+\node[below=0.08cm of engine,color=techGreen!60!black, font=\scriptsize\bfseries]
+    {64\,B LUT — register-resident};
+\end{tikzpicture}
+\caption{CTLE architecture. Packed 4-bit indices stream from Flash into the
+matvec kernel; no dense dequantized weight matrix is materialized.}
 \label{fig:ctle_arch}
 \end{figure}
 
-\begin{table}[t]
+\begin{figure}[t]
 \centering
-\footnotesize
-\caption{Weight-block formats supported by the multi-format firmware.}
-\label{tab:format}
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.12}
-\begin{tabular}{lcl}
-\hline
-Tag & Name & Payload \\
-\hline
-0 & FP32 & count + dense FP32 data \\
-1 & CTLE & rows, cols, 16-FP32 LUT, nibbles \\
-2 & INT4U & rows, cols, one FP32 scale, nibbles \\
-3 & INT4BW & rows, cols, group size, scales, nibbles \\
-4 & P-CTLE & same payload as CTLE; product-LUT kernel \\
-\hline
-\end{tabular}
-\end{table}
+\begin{tikzpicture}[
+    scale=0.60, transform shape,
+    font=\footnotesize,
+    box/.style={draw, rounded corners=3pt, align=center,
+                minimum width=5.6cm, minimum height=1.3cm, inner sep=4pt},
+    dense/.style={box, fill=white},
+    int8s/.style={box, fill=gray!12},
+    ctlef/.style={box, fill=techGreen!35},
+]
+\node[font=\small\bfseries] at (0,2.35)
+    {Transient RAM per weight matrix $W$};
+\node[dense] (fp32)    at (0, 1.1) {
+    \textbf{Dense FP32 / INT4 / INT8}\\
+    \scriptsize full dequantized $\tilde{W}$ materialized in RAM before matvec
+};
+\node[int8s] (int8)    at (0, 0.0) {
+    \textbf{INT4 Block-wise (per-group scales)}\\
+    \scriptsize dense $\tilde{W}$ \emph{plus} scale table read per row-group
+};
+\node[ctlef] (ctlebox) at (0,-1.1) {
+    \textbf{CTLE 4-bit LUT (ours)}\\
+    \scriptsize 64\,B codebook per tensor — \textbf{no dense $W$ in RAM}
+};
+\draw[->,thick] (fp32.east)    -- +(2.1,0)
+    node[right,font=\scriptsize,align=left]{full weight\\buffer};
+\draw[->,thick] (int8.east)    -- +(2.1,0)
+    node[right,font=\scriptsize,align=left]{buffer\,+\,scales};
+\draw[->,thick,techGreen!60!black] (ctlebox.east) -- +(2.1,0)
+    node[right,font=\scriptsize,align=left,text=techGreen!60!black]
+    {\textbf{zero}\\transient RAM};
+\end{tikzpicture}
+\caption{Transient-RAM comparison. Standard formats require a dequantized weight
+matrix in SRAM/PSRAM before every matvec; INT4BW adds a per-row-group scale
+table. CTLE eliminates both: a 64-byte codebook per tensor is the only metadata,
+and indices stream directly into the accumulate loop (Fig.~\ref{fig:ctle_arch}).}
+\label{fig:representation}
+\end{figure}
 
 \begin{algorithm}[t]
 \caption{CTLE fused Tensor--LUT kernel ($N$ even).}

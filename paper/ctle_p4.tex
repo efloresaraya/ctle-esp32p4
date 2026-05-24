@@ -285,6 +285,52 @@ between LUT-codebook and standard INT4 baselines on the same RISC-V MCU.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
+% ── Figure 2: Parameter representation comparison ───────────────────────────
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+    font=\footnotesize,
+    box/.style={draw, rounded corners=3pt, align=center,
+                minimum width=4.5cm, minimum height=1.4cm, inner sep=4pt},
+    dense/.style={box, fill=white},
+    int8/.style={box, fill=gray!12},
+    ctle/.style={box, fill=techGreen!35},
+]
+% ── header ──
+\node[font=\small\bfseries] at (0,2.0)
+    {Parameter representation and transient RAM per weight matrix $W$};
+% ── three format rows ──
+\node[dense] (fp32) at (0, 0.8) {
+    \textbf{Dense FP32}\\
+    \scriptsize Storage: $32$\,bits/weight\quad
+    Transient RAM: full $W\in\mathbb{R}^{M\times N}$ (FP32)
+};
+\node[int8]  (int8) at (0,-0.5) {
+    \textbf{Dense INT4/INT8}\\
+    \scriptsize Storage: $4$--$8$\,bits/weight $+$ scale(s)\quad
+    Transient RAM: dequantized $\tilde{W}$ $+$ scale table
+};
+\node[ctle]  (ctlebox) at (0,-1.8) {
+    \textbf{CTLE 4-bit LUT (ours)}\\
+    \scriptsize Storage: LUT (16 floats, 64\,B) $+$ 4\,bits/weight\quad
+    Transient RAM: none — matvec runs in compressed space
+};
+% ── right-side annotations ──
+\draw[->, thick] (fp32.east)    -- +(2.0,0)
+    node[right, align=left, font=\scriptsize] {baseline quality\\full RAM footprint};
+\draw[->, thick] (int8.east)    -- +(2.0,0)
+    node[right, align=left, font=\scriptsize] {$4\text{--}8\times$ smaller\\dequant buffer required};
+\draw[->, thick] (ctlebox.east) -- +(2.0,0)
+    node[right, align=left, font=\scriptsize] {$8\times$ smaller\\no dense $W$ in RAM};
+\end{tikzpicture}
+\caption{Parameter representation comparison. Dense FP32 and standard INT4/INT8 require
+    a full dequantized weight matrix in transient SRAM before every matvec.
+    CTLE replaces this with a 64-byte codebook and streams 4-bit indices directly into
+    the accumulate loop, eliminating the dequantization buffer entirely.}
+\label{fig:representation}
+\end{figure*}
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Methodology}
 \label{sec:methodology}
 
@@ -617,6 +663,72 @@ FP32 (60{,}777\,KB) exceeds the SPIFFS partition (13{,}312\,KB) and cannot
 be deployed on-device.
 Internal SRAM (624\,KB total) remains 570\,KB free throughout inference;
 the 54\,KB used by the IDF runtime is constant across formats.
+
+Figure~\ref{fig:mem_layout} illustrates this contrast: standard dequantization
+expands a 4-bit model into a transient FP32 buffer that exceeds the PSRAM
+allocation budget, while CTLE streams indices into CPU registers and leaves the
+majority of PSRAM free for the KV-cache and application state.
+
+% ── Figure: SRAM/PSRAM memory layout comparison ─────────────────────────────
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+    scale=0.88, transform shape,
+    font=\sffamily\small,
+    memblock/.style={draw, rectangle, minimum width=3.6cm,
+                     align=center, outer sep=0pt, inner sep=4pt},
+    arrowstyle/.style={-Stealth, thick, gray!70!black, line width=1.1pt},
+    flashmem/.style={draw, cylinder, shape border rotate=90, aspect=0.22,
+                     fill=yellow!15, minimum height=1.1cm, minimum width=1.6cm,
+                     align=center, font=\scriptsize}
+]
+% ── Y-axis (SRAM) ──
+\def\limitY{6.5}
+\def\colL{2.5}
+\def\colR{11.0}
+\draw[->, thick, gray] (-0.3,0) -- (-0.3,8.2) node[above, black, font=\small] {PSRAM usage};
+\draw[dashed, red!70!black, thick] (-0.8,\limitY) -- (15.5,\limitY);
+\node[text=red!70!black, font=\bfseries\scriptsize, anchor=south east]
+    at (15.5,\limitY) {Available PSRAM ceiling (32\,MB)};
+% ── A) Standard dequantization ──
+\node[font=\bfseries] at (\colL,-0.9) {A) Standard dequantization};
+\node[memblock, fill=gray!20, minimum height=1.3cm]  (base1) at (\colL,0.65) {IDF Runtime \\ (stacks, USB, log)};
+\node[memblock, fill=blue!12, minimum height=1.5cm, anchor=south] (act1) at (base1.north) {RunState \\ (KV-cache, RoPE, activations)};
+\node[memblock, pattern=north east lines, pattern color=red!45, draw=red!70!black,
+      text=red!80!black, minimum height=4.5cm, anchor=south] (expand) at (act1.north) {};
+\node[text=red!80!black, align=center, font=\bfseries\scriptsize]
+    at (expand.center) {Dequantization buffer\\\textbf{(materialized FP32 weights)}};
+\node[anchor=west, text=red!80!black, align=left, font=\bfseries\scriptsize]
+    at ([xshift=0.15cm, yshift=1.2cm]expand.east)
+    {$\leftarrow$ grows with model size};
+\node[flashmem] (flash1) at (-2.8,4.2) {Flash \\ (4-bit)};
+\draw[arrowstyle] (flash1) -- node[midway,above,sloped,font=\scriptsize]{read+expand} (expand.west);
+% ── B) CTLE ──
+\node[font=\bfseries] at (\colR,-0.9) {B) CTLE (ours)};
+\node[memblock, fill=gray!20, minimum height=1.3cm]  (base2) at (\colR,0.65) {IDF Runtime \\ (stacks, USB, log)};
+\node[memblock, fill=blue!12, minimum height=1.5cm, anchor=south] (act2) at (base2.north) {RunState \\ (KV-cache, RoPE, activations)};
+\node[memblock, fill=techGreen!45, draw=techGreen!60!black,
+      minimum height=0.55cm, anchor=south] (lut) at (act2.north) {Codebook LUTs ($\approx$64\,B/tensor)};
+\node[circle, draw, thick, fill=white, inner sep=1pt, minimum size=0.9cm,
+      drop shadow] (kernel) at (\colR,5.6) {\large$\sum$};
+\node[left=0.08cm of kernel, font=\scriptsize, text=gray!80!black, align=right]
+    {CPU\\regs};
+\node[flashmem] (flash2) at (14.8,5.6) {Flash \\ (4-bit)};
+\draw[arrowstyle] (flash2.west) -- node[midway,above,font=\scriptsize]{stream indices} (kernel.east);
+\draw[dashed,->,thick,techGreen!60!black] (lut.north) -- (kernel.south);
+\path (lut.north) -- (kernel.south) coordinate[midway] (midgap);
+\node[text=techGreen!50!black, font=\bfseries\scriptsize, align=right, anchor=east]
+    at ([xshift=-0.15cm]midgap)
+    {Free PSRAM headroom\\\textbf{(21.5\,MB available)}};
+\end{tikzpicture}
+\caption{Memory layout comparison on ESP32-P4 Nano.
+    \textbf{(A)} Standard dequantization materializes a full FP32 weight matrix
+    in transient RAM before every matvec, growing proportionally with model size.
+    \textbf{(B)} CTLE streams 4-bit indices directly from Flash into CPU registers
+    and looks them up in a 64-byte per-tensor codebook, leaving 21.5\,MB of PSRAM
+    free for the KV-cache, RoPE tables, and application state.}
+\label{fig:mem_layout}
+\end{figure*}
 
 \paragraph{Generated text quality (CTLE-PSO, temp=0.8, top-$p$=0.9).}
 All three prompts produce coherent TinyStories-style continuations:
