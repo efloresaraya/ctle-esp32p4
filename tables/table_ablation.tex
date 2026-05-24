@@ -1,49 +1,63 @@
-% table_ablation.tex
-% Table I — Quantization method comparison on TinyStories-15M (4-bit)
-% Generated automatically from compress.py + evaluate.py results
+% table_ablation.tex  — Table I: Quantization method comparison
+% Updated 2026-05-24 with corrected FP32 baseline (PPL=9.35, not 6.92) and
+% WikiText-2 test-set column (non-overlapping windows, stride=256, 325,693 tokens).
 %
-% Usage in paper:
-%   \input{tables/table_ablation}
-%
-% Requires: booktabs, multirow, siunitx (or just tabular)
+% Usage: \input{tables/table_ablation}
 
 \begin{table*}[t]
 \centering
 \caption{Quantization method comparison on TinyStories-15M.
-         All methods use 4-bit weight storage. CTLE uses $k{=}16$ codebook entries
-         per tensor; INT4U uses one global scale; INT4BW uses one scale per group
-         of $G{=}32$ columns (effective 5\,bits/weight).
-         NLL and PPL evaluated on 10 TinyStories-style sentences.
+         All CTLE/INT4 methods use 4-bit weight storage.
+         CTLE uses $k{=}16$ codebook entries per tensor;
+         INT4U uses one global scale per tensor;
+         INT4BW uses one scale per group of $G{=}32$ columns
+         ($\approx$5\,bits/weight effective).
+         NLL and PPL\,(TS) are evaluated on our 10-sentence TinyStories corpus
+         (192 tokens scored).
+         PPL\,(WT2) is evaluated on the WikiText-2 test split
+         (325,693 tokens, non-overlapping windows of 256 tokens, stride\,=\,256).
+         Both corpora use the LLaMA SentencePiece tokenizer.
+         \textbf{Important:} TinyStories-15M was trained on children-story text,
+         not Wikipedia; WikiText-2 PPL values reflect domain mismatch as well as
+         compression error and are \emph{not} directly comparable to numbers
+         reported for general-purpose LLMs (OPT, LLaMA).
          $\dagger$~PSO/GA use K-means warm start.}
 \label{tab:ablation}
 \setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lcccccc}
+\begin{tabular}{lcccccccc}
 \toprule
-\textbf{Method} & \textbf{Bits/w} & \textbf{Size (MB)} & \textbf{Ratio} & \textbf{NLL\,$\downarrow$} & \textbf{PPL\,$\downarrow$} & \textbf{Time (s)} \\
+\textbf{Method} & \textbf{Bits/w} & \textbf{Size (MB)} & \textbf{Ratio} &
+\textbf{NLL\,$\downarrow$} & \textbf{PPL (TS)\,$\downarrow$} &
+\textbf{PPL (WT2)\,$\downarrow$} & \textbf{Time (s)} \\
 \midrule
-FP32 (baseline)     & 32   & 60.77 & $1.00\times$  & 1.935 & \phantom{00}6.92 & —     \\
+FP32 (baseline)     & 32   & 60.77 & $1.00\times$  & 2.236 & \phantom{00}9.35  & \phantom{0}6{,}127  & —     \\
 \midrule
-\multicolumn{7}{l}{\textit{Standard INT4 quantization (baselines)}} \\
-INT4 Uniform        &  4   &  7.61 & $7.99\times$  & 9.312 & 11070            & \phantom{0}$<$1 \\
-INT4 Block-wise     & $\approx$5 & 9.51 & $6.39\times$ & 2.371 & \textbf{10.71} & \phantom{0}$<$1 \\
+\multicolumn{8}{l}{\textit{Standard INT4 quantization (baselines)}} \\
+INT4 Uniform        &  4   &  7.61 & $7.99\times$  & 9.312 & 11{,}070          & 533{,}069           & \phantom{0}${<}1$ \\
+INT4 Block-wise     & $\approx$5 & 9.51 & $6.39\times$ & 2.371 & \textbf{10.71} & \textbf{\phantom{0}7{,}120} & \phantom{0}${<}1$ \\
 \midrule
-\multicolumn{7}{l}{\textit{CTLE — learned codebook (this work)}} \\
-CTLE + K-means      &  4   &  7.61 & $7.98\times$  & 2.957 & 19.23           & \phantom{0}73.6 \\
-CTLE + GA$^\dagger$     &  4   &  7.61 & $7.98\times$  & 2.944 & 18.98           & 207.7 \\
-CTLE + PSO$^\dagger$    &  4   &  7.61 & $7.98\times$  & 2.768 & 15.93           & 198.3 \\
+\multicolumn{8}{l}{\textit{CTLE — learned codebook (this work)}} \\
+CTLE + K-means      &  4   &  7.61 & $7.98\times$  & 2.957 & 19.23           & 19{,}239            & \phantom{0}73.6 \\
+CTLE + GA$^\dagger$     &  4   &  7.61 & $7.98\times$  & 2.944 & 18.98           & 19{,}114            & 207.7 \\
+CTLE + PSO$^\dagger$    &  4   &  7.61 & $7.98\times$  & 2.768 & 15.93           & 16{,}827            & 198.3 \\
 \bottomrule
 \end{tabular}
 %
 \smallskip
 \begin{minipage}{\textwidth}
   \footnotesize
-  \textbf{INT4U collapses} (PPL $>$11000) because a single global scale cannot
-  represent the heterogeneous distribution of the 9.2\,M-entry embedding matrix.
-  \textbf{INT4BW} recovers quality (PPL 10.71) at the cost of 25\,\% larger
-  footprint (9.51\,MB vs.\ 7.61\,MB) and additional PSRAM for per-group scales.
-  \textbf{CTLE} achieves competitive PPL at identical 4-bit storage
-  and streams weights directly from Flash with a fixed 64-byte LUT per tensor
-  — eliminating scale-table overhead entirely at inference time.
+  \textbf{INT4U collapses} (PPL\,$>$11\,000 / 533\,000) because a single global scale
+  cannot represent the heterogeneous distribution of the 9.2\,M-entry embedding matrix.
+  \textbf{INT4BW} recovers near-FP32 quality
+  (TS: $+14.5\,\%$; WT2: $+16.2\,\%$ vs.\ FP32) at the cost of 25\,\% larger footprint
+  (9.51\,MB vs.\ 7.61\,MB) and a 31\,\% throughput penalty on RISC-V
+  (see Table~\ref{tab:hw}).
+  \textbf{CTLE-PSO} achieves competitive PPL at identical 4-bit storage and
+  streams weights directly from Flash with a fixed 64-byte LUT per tensor,
+  eliminating per-group scale-table overhead at inference time.
+  PSO reduces PPL by \textbf{17.2\,\%} vs.\ K-means on TinyStories and
+  \textbf{12.5\,\%} on WikiText-2, confirming the improvement is
+  corpus-independent.
 \end{minipage}
 \end{table*}

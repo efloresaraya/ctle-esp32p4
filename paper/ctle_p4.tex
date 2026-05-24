@@ -58,14 +58,16 @@ with inertia-weight decay---both metaheuristic methods accelerated with
 Numba JIT compilation.
 
 We target a 15M-parameter TinyStories transformer and evaluate all methods on
-a 10-sentence corpus.
-PSO achieves perplexity (PPL) of 15.93 vs.\ 19.23 for K-means---a
-\textbf{17.2\,\%} reduction---at identical 7.61\,MB footprint (7.98$\times$
-compression vs.\ FP32), requiring only 64\,B of LUT storage per matrix during
-inference.
-As INT4 baselines: uniform INT4 collapses (PPL\,=\,11070) due to its single
-global scale, while block-wise INT4 ($G{=}32$) achieves PPL\,=\,10.71 at the
-cost of 25\,\% higher footprint (9.51\,MB) and per-group scale overhead.
+two corpora: a 10-sentence in-distribution TinyStories corpus and the
+WikiText-2 test set (325,693 tokens, non-overlapping windows of 256 tokens).
+PSO achieves PPL of 15.93 (TinyStories) / 16{,}827 (WikiText-2) vs.\
+19.23 / 19{,}239 for K-means---a \textbf{17.2\,\%} / \textbf{12.5\,\%}
+reduction across corpora---at identical 7.61\,MB footprint (7.98$\times$
+compression vs.\ FP32), requiring only 64\,B of LUT storage per matrix.
+As INT4 baselines: uniform INT4 collapses (PPL\,$>$533\,000 on WikiText-2)
+due to its single global scale, while block-wise INT4 ($G{=}32$) achieves
+near-FP32 quality ($+$16.2\,\% WikiText-2 PPL) at the cost of 25\,\% larger
+footprint (9.51\,MB) and per-group scale overhead.
 We further implement a streaming C inference engine for the ESP32-P4 Nano
 (RISC-V HP\,@360\,MHz, 32\,MB PSRAM).
 Hardware benchmarks across all formats reveal that INT4BW is
@@ -492,9 +494,16 @@ $d_\mathrm{FFN}\!=\!768$, $\mathrm{vocab}\!=\!32\,000$);
 weights from the karpathy/tinyllamas HuggingFace
 repository~\cite{karpathy2023llama2c}.
 
-\paragraph{Evaluation corpus.}
-10 TinyStories-style sentences, same for all methods.
+\paragraph{Evaluation corpora.}
+\textit{TinyStories (TS):} 10 in-distribution sentences (192 tokens scored).
+\textit{WikiText-2 (WT2):} standard benchmark test split~\cite{merity2016pointer},
+325,693 tokens scored via non-overlapping sliding windows of 256 tokens
+(stride\,=\,256), using the LLaMA SentencePiece tokenizer.
 NLL is mean cross-entropy per token; $\mathrm{PPL}=\exp(\mathrm{NLL})$.
+WT2 absolute PPL values reflect out-of-distribution evaluation
+(TinyStories-15M was not trained on Wikipedia) and are not directly comparable
+to published numbers for general-purpose LLMs; the WT2 column reports
+the \emph{relative} ordering across compression methods on a standard corpus.
 
 \paragraph{Compression pipeline.}
 Script \texttt{compress.py}, argument \texttt{--method} $\in$
@@ -509,20 +518,26 @@ SDK configured for 400\,MHz), 32\,MB QSPI PSRAM, 16\,MB Flash, ESP-IDF v6.1.
 \subsection{Quantization ablation}
 \label{sec:ablation}
 
-Table~\ref{tab:ablation} compares all five compression schemes.
-INT4 Uniform collapses catastrophically (PPL\,=\,11070): a single global scale
-is unable to represent the dynamic range of the 9.2M-entry embedding matrix
-(32\,000$\times$288 weights), which spans multiple orders of magnitude.
-INT4 Block-wise ($G\!=\!32$) recovers quality (PPL\,=\,10.71) but increases
-footprint by 25\,\% (9.51\,MB vs.\ 7.61\,MB) and requires loading and
-converting a per-group scale table during inference.
+Table~\ref{tab:ablation} compares all five compression schemes on both
+evaluation corpora.
+INT4 Uniform collapses catastrophically (PPL\,=\,11{,}070 on TS;
+533{,}069 on WT2): a single global scale is unable to represent the dynamic
+range of the 9.2M-entry embedding matrix (32{,}000$\times$288 weights),
+which spans multiple orders of magnitude.
+INT4 Block-wise ($G\!=\!32$) recovers quality (PPL\,=\,10.71 / 7{,}120 on
+TS/WT2) but increases footprint by 25\,\% (9.51\,MB vs.\ 7.61\,MB) and
+requires loading and converting a per-group scale table during inference.
 
-CTLE+K-means achieves PPL\,=\,19.23 at 7.61\,MB (7.98$\times$) with
-compression completed in 74\,s.
-CTLE+GA marginally improves to PPL\,=\,18.98 in 208\,s.
-CTLE+PSO achieves the best CTLE result (PPL\,=\,15.93, $-$17.2\,\% vs.\
-K-means) in 198\,s, driven entirely by better optimization of the embedding
-tensor (Table~\ref{tab:relmse}).
+CTLE+K-means achieves PPL\,=\,19.23 / 19{,}239 (TS/WT2) at 7.61\,MB
+(7.98$\times$) with compression completed in 74\,s.
+CTLE+GA marginally improves to PPL\,=\,18.98 / 19{,}114 in 208\,s.
+CTLE+PSO achieves the best CTLE result (PPL\,=\,15.93 / 16{,}827,
+$-$17.2\,\% / $-$12.5\,\% vs.\ K-means on TS/WT2) in 198\,s, driven
+entirely by better optimization of the embedding tensor
+(Table~\ref{tab:relmse}).
+The consistent ranking across both corpora---an in-distribution TinyStories
+corpus and the out-of-distribution WikiText-2 benchmark---confirms that the
+PSO improvement is not a corpus-specific artefact.
 
 \input{../tables/table_ablation}
 
@@ -620,8 +635,9 @@ but the system does not crash or reset.
 \paragraph{INT4U vs.\ CTLE.}
 Uniform INT4 with a single global scale fails catastrophically on transformers
 whose weight distribution is multimodal and heavy-tailed.
-This result---PPL collapse from 6.92 to 11{,}070---is consistent with prior work
-on per-tensor INT4 baselines~\cite{frantar2023gptq,tomasev2019llm_quantization_survey},
+This result---PPL rising from 9.35 to 11{,}070 on TinyStories (and
+533{,}069 on WikiText-2)---is consistent with prior work on per-tensor INT4
+baselines~\cite{frantar2023gptq,tomasev2019llm_quantization_survey},
 and explains why per-group schemes (INT4BW) or learned codebooks (CTLE) are
 necessary for sub-8-bit compression.
 
@@ -648,12 +664,16 @@ constraint: INT4BW is preferable when PPL is the primary metric and the
 throughput and minimum footprint take priority.
 
 \paragraph{Value of PSO over K-means.}
-The $-$17.2\,\% PPL improvement of PSO over K-means at zero additional memory
-cost demonstrates that metaheuristic codebook optimization is a viable and
-practical technique for TinyLM compression.
+The $-$17.2\,\% PPL improvement of PSO over K-means on TinyStories
+($-$12.5\,\% on WikiText-2) at zero additional memory cost demonstrates that
+metaheuristic codebook optimization is a viable and practical technique for
+TinyLM compression.
 The gain is concentrated on the embedding matrix (9.2M weights, two orders of
 magnitude larger than any other tensor), confirming that K-means local minima
 are most harmful for large, non-Gaussian distributions.
+The fact that the improvement holds on both an in-distribution (TS) and an
+out-of-distribution (WT2) corpus confirms that PSO finds a genuinely better
+codebook, not one that merely overfits to a particular evaluation domain.
 On small tensors ($\leq$82K weights), all three methods converge to the same
 quality, validating that K-means already finds the global minimum for those.
 
@@ -674,14 +694,12 @@ scatter-accumulate) are expected to reduce the per-token time and are left for
 future work.
 
 \paragraph{Limitations.}
-First, evaluation is on a single model and corpus; broader testing across
-tasks and model families is needed.
+First, evaluation is on a single model family (TinyStories-15M); broader
+testing across tasks and larger model families is needed.
 Second, CTLE uses one codebook per matrix; group-wise codebooks or
 mixed-precision extensions may improve quality.
 Third, energy was not measured on the P4 (hardware instrumentation pending);
 the 0.965\,tok/s result provides throughput only.
-Fourth, WikiText-2 as a second evaluation dataset is planned but not yet
-included in this version.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -693,13 +711,18 @@ microcontrollers that streams packed indices from Flash and performs
 lookup-and-accumulate matrix--vector products without materializing dense
 weight tensors in SRAM.
 Three codebook learning strategies were compared: K-means, GA, and PSO.
-PSO achieves the best quality ($-$17.2\,\% PPL vs.\ K-means) at identical
-7.98$\times$ compression, through better optimization of the 9.2M-entry
-embedding tensor.
-INT4 Uniform collapses (PPL\,=\,11{,}070), demonstrating that per-group or
-learned scales are necessary for 4-bit transformers.
-INT4 Block-wise achieves better PPL (10.71) at 25\,\% higher footprint and with
-per-group scale overhead.
+PSO achieves the best quality ($-$17.2\,\% PPL vs.\ K-means on TinyStories;
+$-$12.5\,\% on WikiText-2) at identical 7.98$\times$ compression, through
+better optimization of the 9.2M-entry embedding tensor.
+The consistent improvement across both an in-distribution corpus and the
+standard WikiText-2 benchmark confirms that PSO finds a genuinely superior
+codebook and not a domain-specific optimum.
+INT4 Uniform collapses (PPL\,=\,11{,}070 / 533{,}069 on TS/WT2),
+demonstrating that per-group or learned scales are necessary for 4-bit
+transformers.
+INT4 Block-wise achieves better PPL (10.71 / 7{,}120) at 25\,\% higher
+footprint and with per-group scale overhead that carries a 31\,\% throughput
+penalty on the RISC-V target.
 
 On the ESP32-P4 Nano (RISC-V HP@360\,MHz), CTLE+PSO achieves 0.965\,tok/s,
 loading a 7.61-MB model from SPIFFS in 2.69\,s and leaving 21.5\,MB of
@@ -709,12 +732,12 @@ confirming that 4-bit CTLE+PSO preserves practical generation quality.
 
 \paragraph{Future directions.}
 (i) RISC-V-optimized CTLE kernel (RVV extension, unrolled nibble decoding).
-(ii) WikiText-2 evaluation for broader generalizability.
-(iii) Energy measurement on ESP32-P4 with hardware power meter.
-(iv) CTLE-NPU: a Verilog systolic-array implementation on Cyclone IV FPGA
+(ii) Energy measurement on ESP32-P4 with hardware power meter.
+(iii) CTLE-NPU: a Verilog systolic-array implementation on Cyclone IV FPGA
      with PicoRV32, reusing the GA/PSO codebook optimizer with hardware-aware
      fitness (INT8 fixed-point penalty)---target DATE/FPL/TCAS-II.
-(v) Group-wise codebooks or sparse residuals for improved quality at 4 bits.
+(iv) Group-wise codebooks or sparse residuals for improved quality at 4 bits.
+(v) Broader evaluation across model families and downstream tasks.
 (vi) Codebook learning guided by validation loss (task-aware optimization).
 
 

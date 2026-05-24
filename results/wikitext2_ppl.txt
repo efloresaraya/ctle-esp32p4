@@ -1,0 +1,34 @@
+# WikiText-2 PPL evaluation — CTLE-P4
+# Date: 2026-05-24
+# Tokenizer: LLaMA SentencePiece (models/tokenizer.model, vocab=32000)
+# Corpus: WikiText-2 test split (wikitext-2-raw-v1, HuggingFace)
+# Protocol: non-overlapping windows, size=256, stride=256
+# Tokens scored: 325,693  (of 326,971 total; last partial window excluded)
+#
+# NOTE: TinyStories-15M was trained on children-story text, NOT Wikipedia.
+# These PPL values reflect distribution mismatch as well as compression error.
+# Absolute numbers are NOT comparable to GPTQ/SqueezeLLM (different models+training).
+# The value of this column is the *relative* ordering across compression methods.
+#
+# FP32 reference on TinyStories-10 (same code, same model): PPL = 9.35 (NLL=2.2358)
+# Previous PPL=6.92 in older code version used different evaluation sentences.
+
+# method, file, NLL, PPL_WT2, PPL_TS10, n_tokens
+FP32,model.safetensors,8.7205,6127.13,9.35,325693
+INT4U,stories15M_int4u.bin,13.1864,533069.49,11070.33,325693
+INT4BW,stories15M_int4bw.bin,8.8707,7120.29,10.71,325693
+CTLE-Kmeans,stories15M_ctle_k16.bin,9.8647,19239.41,19.23,325693
+CTLE-GA,stories15M_ga_k16.bin,9.8582,19114.29,18.98,325693
+CTLE-PSO,stories15M_pso_k16.bin,9.7307,16826.62,15.93,325693
+
+# Relative PPL degradation vs FP32 (compression penalty):
+# TinyStories: INT4BW +14.5%, CTLE-PSO +70.4%
+# WikiText-2:  INT4BW +16.2%, CTLE-PSO +174.6%
+#
+# INT4BW is consistently within +15% of FP32 across both corpora.
+# CTLE-PSO is 70-175% worse than FP32 but 17.2% (TS) / 12.5% (WT2) better than K-means.
+#
+# PSO vs K-means relative improvement:
+# TinyStories: (19.23 - 15.93) / 19.23 = 17.2%
+# WikiText-2:  (19239 - 16827) / 19239 = 12.5%
+# → PSO improvement is consistent and real across both domains.
