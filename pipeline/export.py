@@ -63,6 +63,7 @@ TAG_CTLE   = 1
 TAG_INT4U  = 2   # INT4 Uniform  (per-tensor scale)
 TAG_INT4BW = 3   # INT4 Block-wise (per-row-group scale, G=32)
 TAG_PCTLE  = 4   # Product-LUT CTLE — same data layout as CTLE, tag=4
+TAG_CTLE5  = 5   # CTLE with K=32 centroids, 5-bit packed indices
 
 
 def _pack_nibbles(indices: np.ndarray) -> bytes:
@@ -72,6 +73,28 @@ def _pack_nibbles(indices: np.ndarray) -> bytes:
         flat = np.append(flat, 0)
     packed = flat[0::2] | (flat[1::2] << 4)
     return packed.tobytes()
+
+
+def _pack_5bit(indices: np.ndarray) -> bytes:
+    """Pack uint8 indices (0-31) into 5-bit packed bytes.
+
+    Layout: 8 indices are packed into 5 bytes (40 bits).
+    Index i occupies bits [5i : 5i+5] within the 40-bit group.
+    The array is zero-padded to the next multiple of 8 before packing.
+    """
+    flat = indices.reshape(-1).astype(np.uint64)
+    n = len(flat)
+    pad = (-n) % 8
+    if pad:
+        flat = np.concatenate([flat, np.zeros(pad, dtype=np.uint64)])
+
+    groups = flat.reshape(-1, 8)                          # [G, 8]
+    shifts = np.array([0, 5, 10, 15, 20, 25, 30, 35], dtype=np.uint64)
+    vals = (groups << shifts).sum(axis=1)                 # [G]  40-bit packed
+
+    byte_shifts = np.array([0, 8, 16, 24, 32], dtype=np.uint64)
+    out = ((vals[:, None] >> byte_shifts) & np.uint64(0xFF)).astype(np.uint8)
+    return out.reshape(-1).tobytes()
 
 
 def _write_f32_block(f, data: np.ndarray) -> None:
@@ -90,6 +113,22 @@ def _write_ctle_block(f, lut: np.ndarray, indices: np.ndarray) -> None:
     f.write(struct.pack("<II", rows, cols))
     f.write(lut32.tobytes())              # 64 bytes
     f.write(_pack_nibbles(indices))       # ceil(rows*cols/2) bytes
+
+
+def _write_ctle5_block(f, lut: np.ndarray, indices: np.ndarray) -> None:
+    """Write a CTLE-5b block (K=32 codebook, 5-bit packed indices).
+
+    Format: tag(u8=5) | rows(u32) | cols(u32) | lut[32](f32=128B) | 5bit_packed
+    5-bit packing: 8 indices per 5 bytes; n_bytes = ceil(rows*cols/8)*5
+    """
+    rows, cols = indices.shape
+    assert lut.size == 32, f"CTLE-5b requires K=32 codebook, got {lut.size}"
+    lut32 = lut.astype(np.float32)
+    n_groups = (rows * cols + 7) // 8
+    f.write(struct.pack("<B", TAG_CTLE5))
+    f.write(struct.pack("<II", rows, cols))
+    f.write(lut32.tobytes())          # 128 bytes
+    f.write(_pack_5bit(indices))      # n_groups * 5 bytes
 
 
 def _write_pctle_block(f, lut: np.ndarray, indices: np.ndarray) -> None:
@@ -180,6 +219,9 @@ def write_ctle_bin(
                 elif kind == "pctle":
                     _, lut, indices = val
                     _write_pctle_block(f, lut, indices)
+                elif kind == "ctle5":
+                    _, lut, indices = val
+                    _write_ctle5_block(f, lut, indices)
                 else:
                     # Legacy CTLE tuple: (lut [16], indices [M,N])
                     lut, indices = val

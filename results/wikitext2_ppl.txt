@@ -20,15 +20,23 @@ INT4BW,stories15M_int4bw.bin,8.8707,7120.29,10.71,325693
 CTLE-Kmeans,stories15M_ctle_k16.bin,9.8647,19239.41,19.23,325693
 CTLE-GA,stories15M_ga_k16.bin,9.8582,19114.29,18.98,325693
 CTLE-PSO,stories15M_pso_k16.bin,9.7307,16826.62,15.93,325693
+CTLE-5b,stories15M_ctle5_k32.bin,9.0151,8226.03,10.00,325693
 
 # Relative PPL degradation vs FP32 (compression penalty):
-# TinyStories: INT4BW +14.5%, CTLE-PSO +70.4%
-# WikiText-2:  INT4BW +16.2%, CTLE-PSO +174.6%
+# TinyStories: INT4BW +14.5%, CTLE-5b +6.9%, CTLE-PSO +70.4%
+# WikiText-2:  INT4BW +16.2%, CTLE-5b +34.2%, CTLE-PSO +174.6%
 #
-# INT4BW is consistently within +15% of FP32 across both corpora.
-# CTLE-PSO is 70-175% worse than FP32 but 17.2% (TS) / 12.5% (WT2) better than K-means.
+# CTLE-5b (K=32, 5-bit indices, 9.51 MB) beats INT4BW on TinyStories (10.00 < 10.71)
+# at the same 9.51 MB footprint, while preserving the single-LUT streaming pattern
+# (no per-group PSRAM scale reads).  WT2 PPL is 15.5% above INT4BW.
 #
-# PSO vs K-means relative improvement:
+# Summary table (TinyStories PPL / WT2 PPL / model KB):
+#   FP32      :  9.35 /  6127 / 60771 KB  (reference)
+#   CTLE-5b   : 10.00 /  8226 /  9511 KB  ← NEW, beats INT4BW on TS
+#   INT4BW    : 10.71 /  7120 /  9285 KB
+#   CTLE-PSO  : 15.93 / 16827 /  7433 KB
+#
+# PSO vs K-means relative improvement (K=16):
 # TinyStories: (19.23 - 15.93) / 19.23 = 17.2%
 # WikiText-2:  (19239 - 16827) / 19239 = 12.5%
 # → PSO improvement is consistent and real across both domains.

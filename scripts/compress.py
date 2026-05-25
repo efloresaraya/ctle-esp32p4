@@ -50,9 +50,10 @@ from pipeline.export   import write_ctle_bin
 # Tensors with fewer elements than this threshold are kept as FP32
 _SMALL_TENSOR_THRESHOLD = 1_024   # e.g. RMSNorm gains [dim=288]
 
-_METHODS = ("kmeans", "ga", "pso", "de", "int4_uniform", "int4_blockwise", "pctle", "pctle_de")
+_METHODS = ("kmeans", "ga", "pso", "de", "int4_uniform", "int4_blockwise", "pctle", "pctle_de", "ctle5")
 _INT4_METHODS  = {"int4_uniform", "int4_blockwise"}
 _PCTLE_METHODS = {"pctle", "pctle_de"}   # P-CTLE: optimized weights + TAG_PCTLE
+_CTLE5_METHODS = {"ctle5"}               # CTLE-5b: K=32 centroids, 5-bit packed indices
 
 
 def load_safetensors(path: Path) -> dict[str, np.ndarray]:
@@ -119,6 +120,7 @@ def compress(
 
     is_int4  = method in _INT4_METHODS
     is_pctle = method in _PCTLE_METHODS
+    is_ctle5 = method in _CTLE5_METHODS
     hw_tag = " +HW" if (hw_aware and method not in {"kmeans"} | _INT4_METHODS) else ""
     print(f"\n{'='*64}")
     print(f"  CTLE Compression Pipeline")
@@ -127,10 +129,12 @@ def compress(
     print(f"  Config  : {config_path}")
     print(f"  Output  : {output_path}")
     if not is_int4:
-        print(f"  K       : {k} centroids (4-bit)")
+        _k_display = 32 if is_ctle5 else k
+        print(f"  K       : {_k_display} centroids ({'5-bit' if is_ctle5 else '4-bit'})")
     method_label = {
-        "pctle": "PCTLE (PSO weight opt + product-LUT tag)",
-        "pctle_de": "PCTLE-DE (DE weight opt + product-LUT tag)",
+        "pctle":   "PCTLE (PSO weight opt + product-LUT tag)",
+        "pctle_de":"PCTLE-DE (DE weight opt + product-LUT tag)",
+        "ctle5":   "CTLE-5b (K=32, PSO opt, 5-bit packed indices)",
     }.get(method, method.upper())
     print(f"  Method  : {method_label}{hw_tag}")
     if not is_int4:
@@ -193,6 +197,17 @@ def compress(
             total_ctle_bytes += ctle_bytes
             shape_str = str(weights.shape)
             print(f"  {name:<50} {shape_str:<20} {'PCTLE':<6} {rel_mse:>10.6f}")
+        elif is_ctle5:
+            # CTLE-5b: K=32 centroids, PSO-optimized, 5-bit packed indices.
+            w2d = weights.reshape(weights.shape[0], -1).astype(np.float32)
+            codebook, indices = _quantize_ctle(w2d, 32, "pso", hw_aware, seed)
+            rel_mse = reconstruction_error(w2d, codebook, indices)
+            processed[name] = ("ctle5", codebook, indices)
+            n_groups = (w2d.shape[0] * w2d.shape[1] + 7) // 8
+            ctle5_bytes = 128 + n_groups * 5   # 128B LUT + 5-bit packed stream
+            total_ctle_bytes += ctle5_bytes
+            shape_str = str(weights.shape)
+            print(f"  {name:<50} {shape_str:<20} {'CTLE5':<6} {rel_mse:>10.6f}")
         else:
             w2d = weights.reshape(weights.shape[0], -1).astype(np.float32)
             codebook, indices = _quantize_ctle(w2d, k, method, hw_aware, seed)
@@ -233,7 +248,7 @@ def main() -> None:
     parser.add_argument("--k",        type=int, default=16,
                         help="Codebook size (default 16)")
     parser.add_argument("--method",   choices=_METHODS, default="kmeans",
-                        help="Codebook optimizer: kmeans | ga | pso | de | int4_uniform | int4_blockwise | pctle | pctle_de  (default: kmeans)")
+                        help="Codebook optimizer: kmeans | ga | pso | de | int4_uniform | int4_blockwise | pctle | pctle_de | ctle5  (default: kmeans)")
     parser.add_argument("--hw-aware", action="store_true",
                         help="GA/PSO/DE: add INT8 fixed-point penalty (hardware-aware)")
     parser.add_argument("--seed",     type=int, default=42,

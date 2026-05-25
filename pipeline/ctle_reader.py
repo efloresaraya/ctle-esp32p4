@@ -14,6 +14,7 @@ TAG_CTLE   = 1
 TAG_INT4U  = 2
 TAG_INT4BW = 3
 TAG_PCTLE  = 4   # Product-LUT CTLE — same data layout as CTLE
+TAG_CTLE5  = 5   # CTLE with K=32 centroids, 5-bit packed indices
 
 _INT4_OFFSET = 7  # stored nibble = signed_q + 7
 
@@ -25,6 +26,25 @@ def _unpack_nibbles(packed: np.ndarray, total: int) -> np.ndarray:
     interleaved[0::2] = lo
     interleaved[1::2] = hi
     return interleaved[:total]
+
+
+def _unpack_5bit(packed: np.ndarray, n: int) -> np.ndarray:
+    """Unpack 5-bit indices from a byte array packed by _pack_5bit().
+
+    8 indices are packed into 5 bytes (40 bits).
+    Index i occupies bits [5i : 5i+5] within the 40-bit group.
+    Returns uint8 array of length n.
+    """
+    n_groups = (n + 7) // 8
+    needed = n_groups * 5
+    if len(packed) < needed:
+        packed = np.pad(packed, (0, needed - len(packed)))
+    raw = packed[:needed].astype(np.uint64).reshape(n_groups, 5)
+    byte_shifts = np.array([0, 8, 16, 24, 32], dtype=np.uint64)
+    vals = (raw << byte_shifts).sum(axis=1)               # [n_groups] 40-bit vals
+    bit_shifts = np.array([0, 5, 10, 15, 20, 25, 30, 35], dtype=np.uint64)
+    indices = ((vals[:, None] >> bit_shifts) & np.uint64(0x1F)).astype(np.uint8)
+    return indices.reshape(-1)[:n]
 
 
 def read_ctle_bin(path: Path) -> tuple[dict, dict]:
@@ -113,6 +133,13 @@ def read_ctle_bin(path: Path) -> tuple[dict, dict]:
                 w_g = (nib_pad.astype(np.float32) - _INT4_OFFSET) * scales[:, :, None]
                 w = w_g.reshape(rows, n_groups * group_size)[:, :cols]
                 return w.astype(np.float32).reshape(shape)
+            elif tag == TAG_CTLE5:
+                rows, cols = struct.unpack("<II", f.read(8))
+                lut = np.frombuffer(f.read(128), dtype=np.float32).copy()  # 32 × 4B = 128B
+                n_bytes = ((rows * cols + 7) // 8) * 5
+                packed = np.frombuffer(f.read(n_bytes), dtype=np.uint8).copy()
+                indices = _unpack_5bit(packed, rows * cols).reshape(rows, cols)
+                return lut[indices].astype(np.float32).reshape(shape)
             else:
                 raise ValueError(f"Unknown tag={tag} at tensor '{name}'")
 

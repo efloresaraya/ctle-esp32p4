@@ -911,14 +911,20 @@ indicating that 4-bit CTLE+PSO preserves practical TinyStories-style
 generation quality in this setting.
 
 \paragraph{Future directions.}
-(i) RISC-V-optimized CTLE kernel (RVV extension, unrolled nibble decoding).
-(ii) Energy measurement on ESP32-P4 with hardware power meter.
-(iii) CTLE-NPU: a streaming product-LUT micro-NPU on Cyclone IV FPGA
+(i) \textbf{CTLE-5b}: $K\!=\!32$ centroids with 5-bit packed indices
+    (9.51\,MB, same footprint as INT4BW) achieves PPL\,10.00 on TinyStories,
+    surpassing INT4BW (10.71) while preserving the single-LUT streaming pattern
+    and eliminating per-group PSRAM scale reads.  Firmware implementation of
+    the 5-bit decoder (RVV-optimized) and throughput measurement on ESP32-P4 are
+    the immediate next step.
+(ii) RISC-V-optimized CTLE kernel (RVV extension, unrolled nibble decoding).
+(iii) Energy measurement on ESP32-P4 with hardware power meter.
+(iv) CTLE-NPU: a streaming product-LUT micro-NPU on Cyclone IV FPGA
      with PicoRV32, reusing the GA/PSO codebook optimizer with hardware-aware
      fitness (INT8 fixed-point penalty)---target DATE/FPL/TCAS-II.
-(iv) Group-wise codebooks or sparse residuals for improved quality at 4 bits.
-(v) Broader evaluation across model families and downstream tasks.
-(vi) Codebook learning guided by validation loss (task-aware optimization).
+(v) Group-wise codebooks or sparse residuals for improved quality at 4 bits.
+(vi) Broader evaluation across model families and downstream tasks.
+(vii) Codebook learning guided by validation loss (task-aware optimization).
 
 
 % ─────────────────────────────────────────────────────────────────────────────

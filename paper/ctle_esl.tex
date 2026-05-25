@@ -459,12 +459,13 @@ point, not a quality-optimal configuration.
 Limitations: single TinyLM family; reconstruction-error objective; no energy
 measurement; per-tensor codebooks. Future work includes RVV kernel optimization,
 hardware power metering, and a streaming product-LUT micro-NPU on FPGA.
-A natural extension is \textbf{CTLE-5b}: using $K\!=\!32$ centroids and
-5-bit packed indices. The LUT grows to 128\,B per tensor, the index stream is
-25\,\% wider than CTLE-4b, but the single-LUT streaming pattern is preserved
-and per-group scale reads are avoided. CTLE-5b may narrow the quality gap with
-INT4BW while retaining a more regular PSRAM-access pattern; its 5-bit packing
-decoder overhead must be evaluated experimentally.
+A natural extension is \textbf{CTLE-5b}: $K\!=\!32$ centroids with
+5-bit packed indices (128\,B LUT per tensor, 9.51\,MB total). PSO-optimized
+CTLE-5b achieves PPL\,10.00 on the TinyStories probe, \emph{surpassing}
+INT4BW (10.71) at the same 9.51\,MB footprint while preserving the
+single-LUT streaming pattern and eliminating per-group PSRAM scale reads.
+WikiText-2 PPL (8{,}226) is 15\,\% above INT4BW (7{,}120), suggesting
+room for a firmware 5-bit decoder. Throughput evaluation remains future work.
 
 
 % ─────────────────────────────────────────────────────────────────────────────

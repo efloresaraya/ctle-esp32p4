@@ -19,12 +19,13 @@
 FP32                & 32   & 60.77 & \phantom{00}9.35 & \phantom{0}6{,}127 & — \\
 \midrule
 INT4U               & 4    &  7.61 & 11{,}070 & 533{,}069 & ${<}1$ \\
-INT4BW              & $\sim$5 & 9.51 & \textbf{10.71} & \textbf{7{,}120} & ${<}1$ \\
+INT4BW              & $\sim$5 & 9.51 & 10.71 & \textbf{7{,}120} & ${<}1$ \\
 \midrule
 CTLE-KM             & 4    &  7.61 & 19.23 & 19{,}239 & 73.6 \\
 CTLE-GA$^\dagger$   & 4    &  7.61 & 18.98 & 19{,}114 & 207.7 \\
 CTLE-PSO$^\dagger$  & 4    &  7.61 & 15.93 & 16{,}827 & 198.3 \\
 P-CTLE$^{\dagger\ddagger}$ & 4 & 7.61 & 33.14 & 29{,}049 & 181.4 \\
+\textbf{CTLE-5b}$^\dagger$ & \textbf{5} & \textbf{9.51} & \textbf{10.00} & 8{,}226 & 374 \\
 \bottomrule
 \end{tabular}
 %
@@ -35,5 +36,7 @@ P-CTLE$^{\dagger\ddagger}$ & 4 & 7.61 & 33.14 & 29{,}049 & 181.4 \\
   non-overlapping windows. ``Comp. s'' is offline model compression time and
   excludes runtime product-LUT rebuilds. $\dagger$~uses K-means warm start.
   $\ddagger$~also quantises activations to 4 bits at runtime.
+  CTLE-5b uses $K\!=\!32$ centroids with 5-bit packed indices; its footprint
+  equals INT4BW but eliminates per-group PSRAM scale reads.
 \end{minipage}
 \end{table}

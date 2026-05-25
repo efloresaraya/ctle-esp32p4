@@ -21,7 +21,7 @@ def kmeans_codebook(
 
     Args:
         weights:  2-D float32 array [M, N]
-        k:        codebook size (must be <= 16 for 4-bit indices)
+        k:        codebook size (≤16 for 4-bit CTLE, ≤32 for 5-bit CTLE-5b)
         n_iters:  maximum K-means iterations
         tol:      convergence tolerance on centroid shift
         seed:     random seed for reproducibility
@@ -30,7 +30,7 @@ def kmeans_codebook(
         codebook: float32 array [k]        — centroid values
         indices:  uint8  array [M, N]      — per-weight codebook index (0..k-1)
     """
-    assert k <= 16, "4-bit indices support at most 16 centroids"
+    assert k <= 32, "5-bit indices support at most 32 centroids (4-bit CTLE uses k≤16)"
     assert weights.ndim == 2, "weights must be 2-D [M, N]"
 
     rng = np.random.default_rng(seed)
