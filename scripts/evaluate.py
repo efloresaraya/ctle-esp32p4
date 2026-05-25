@@ -143,25 +143,31 @@ def _apply_rope(
     return rot(xq), rot(xk)
 
 
-def _quantize_vec(x: torch.Tensor) -> torch.Tensor:
-    """Uniform 16-level quantization of a 1-D activation vector (P-CTLE step)."""
+def _quantize_vec(x: torch.Tensor, n_levels: int = 16) -> torch.Tensor:
+    """Uniform n_levels-quantization of a 1-D activation vector (P-CTLE step).
+
+    n_levels=16  → 4-bit activations (original P-CTLE firmware behaviour)
+    n_levels=32  → 5-bit activations (experimental, 512-entry product LUT)
+    """
+    n = n_levels - 1
     x_min = x.min().item()
     x_max = x.max().item()
-    step = (x_max - x_min) / 15.0
+    step = (x_max - x_min) / float(n)
     if step < 1e-8:
         return x.clone()
-    a_idx = torch.clamp(torch.round((x - x_min) / step), 0, 15).long()
+    a_idx = torch.clamp(torch.round((x - x_min) / step), 0, n).long()
     return (x_min + a_idx.float() * step).to(x.dtype)
 
 
-def _quantize_act(x: torch.Tensor) -> torch.Tensor:
-    """Per-token (per-row) uniform 16-level activation quantization for P-CTLE.
-    Matches the firmware pctle_matvec() quantization step exactly.
+def _quantize_act(x: torch.Tensor, n_levels: int = 16) -> torch.Tensor:
+    """Per-token (per-row) uniform activation quantization for P-CTLE.
+
+    n_levels=16 matches the firmware pctle_matvec() quantization exactly.
+    Pass n_levels=32 to emulate a 5-bit activation scheme (experimental).
     """
     if x.dim() == 1:
-        return _quantize_vec(x)
-    # [seq, dim] → quantize each token independently
-    return torch.stack([_quantize_vec(x[i]) for i in range(x.shape[0])], dim=0)
+        return _quantize_vec(x, n_levels)
+    return torch.stack([_quantize_vec(x[i], n_levels) for i in range(x.shape[0])], dim=0)
 
 
 def forward(
@@ -229,13 +235,17 @@ def forward_pctle(
     weights: dict,
     config: dict,
     freqs_cis: torch.Tensor,
+    n_act_levels: int = 16,
 ) -> torch.Tensor:
     """P-CTLE forward pass.
 
-    Identical to forward() but every activation vector is quantized to 16
-    uniform levels before each weight matrix multiply, simulating the
-    firmware pctle_matvec() product-LUT kernel.  Weights are already
+    Identical to forward() but every activation vector is quantized to
+    n_act_levels uniform levels before each weight matrix multiply, simulating
+    the firmware pctle_matvec() product-LUT kernel.  Weights are already
     approximately quantized (loaded from a P-CTLE bin via ctle_reader).
+
+    n_act_levels=16 (default) → 4-bit activations, 256-entry product LUT
+    n_act_levels=32           → 5-bit activations, 512-entry product LUT (experimental)
 
     No multiplications occur between quantized activations and quantized
     weights in the hot path — the Python emulation uses FP32 matmul for
@@ -249,6 +259,7 @@ def forward_pctle(
     kv_dim     = config["kv_dim"]
     kv_heads   = n_kv_heads
     n_rep      = n_heads // kv_heads
+    qa = lambda x: _quantize_act(x, n_act_levels)   # ← bound quantizer
 
     seq = tokens.shape[0]
     w = {k: _t(v) for k, v in weights.items()}
@@ -257,7 +268,7 @@ def forward_pctle(
 
     for l in range(n_layers):
         h = _rmsnorm(x, w[f"attn_norm.{l}"])
-        hq = _quantize_act(h)                    # ← activation quantisation
+        hq = qa(h)                               # ← activation quantisation
 
         q = hq @ w[f"wq.{l}"].T
         k = hq @ w[f"wk.{l}"].T
@@ -283,19 +294,16 @@ def forward_pctle(
         attn   = F.softmax(scores.float(), dim=-1).type_as(q)
         out    = (attn @ v).transpose(0, 1).contiguous().view(seq, dim)
 
-        outq = _quantize_act(out)                # ← quantise before wo projection
-        x = x + outq @ w[f"wo.{l}"].T
+        x = x + qa(out) @ w[f"wo.{l}"].T        # ← quantise before wo
 
-        h     = _rmsnorm(x, w[f"ffn_norm.{l}"])
-        hq    = _quantize_act(h)                 # ← quantise before FFN projections
-        gate  = F.silu(hq @ w[f"w1.{l}"].T)
-        up    = hq @ w[f"w3.{l}"].T
-        ffnq  = _quantize_act(gate * up)         # ← quantise before w2
-        x     = x + ffnq @ w[f"w2.{l}"].T
+        h    = _rmsnorm(x, w[f"ffn_norm.{l}"])
+        hq   = qa(h)                             # ← quantise before FFN
+        gate = F.silu(hq @ w[f"w1.{l}"].T)
+        up   = hq @ w[f"w3.{l}"].T
+        x    = x + qa(gate * up) @ w[f"w2.{l}"].T  # ← quantise before w2
 
     x      = _rmsnorm(x, w["norm"])
-    xq     = _quantize_act(x)                   # ← quantise before logit projection
-    logits = xq @ w["tok_embeddings"].T          # tied weights
+    logits = qa(x) @ w["tok_embeddings"].T       # tied weights
     return logits
 
 
@@ -307,10 +315,11 @@ def compute_ppl_sentences(
     config: dict,
     tokenizer,
     max_seq: int = 256,
+    n_act_levels: int = 16,
 ) -> tuple[float, float]:
     """Return (mean_nll, ppl) over a list of text sentences."""
     freqs_cis  = _precompute_rope(config["dim"] // config["n_heads"], max_seq)
-    fwd        = forward_pctle if config.get("pctle") else forward
+    is_pctle   = config.get("pctle")
     total_nll, total_tok = 0.0, 0
 
     with torch.no_grad():
@@ -320,7 +329,10 @@ def compute_ppl_sentences(
                 continue
             ids    = ids[:max_seq]
             tokens = torch.tensor(ids, dtype=torch.long)
-            logits = fwd(tokens, weights, config, freqs_cis)
+            if is_pctle:
+                logits = forward_pctle(tokens, weights, config, freqs_cis, n_act_levels)
+            else:
+                logits = forward(tokens, weights, config, freqs_cis)
             lp     = F.log_softmax(logits[:-1].float(), dim=-1)
             tgt    = tokens[1:]
             nll    = -lp[range(len(tgt)), tgt].sum().item()
@@ -340,6 +352,7 @@ def compute_ppl_tokens(
     max_seq: int = 256,
     stride: int | None = None,
     verbose: bool = False,
+    n_act_levels: int = 16,
 ) -> tuple[float, float, int]:
     """
     Compute PPL with a sliding window over a pre-tokenised sequence.
@@ -353,7 +366,7 @@ def compute_ppl_tokens(
         stride = max_seq            # default: non-overlapping
 
     freqs_cis  = _precompute_rope(config["dim"] // config["n_heads"], max_seq)
-    fwd        = forward_pctle if config.get("pctle") else forward
+    is_pctle   = config.get("pctle")
     total_nll, total_tok = 0.0, 0
     n_all      = len(all_ids)
     n_windows  = max(1, (n_all - 1 - max_seq) // stride + 1)
@@ -368,7 +381,10 @@ def compute_ppl_tokens(
             if len(chunk) < 2:
                 break
             tokens = torch.tensor(chunk, dtype=torch.long)
-            logits = fwd(tokens, weights, config, freqs_cis)
+            if is_pctle:
+                logits = forward_pctle(tokens, weights, config, freqs_cis, n_act_levels)
+            else:
+                logits = forward(tokens, weights, config, freqs_cis)
 
             # When overlapping, only score the NEW tokens (stride tokens from end)
             if stride < max_seq and win > 0:
@@ -447,8 +463,11 @@ def main() -> None:
                         help="Max sequence length / window size (default: 256)")
     parser.add_argument("--stride",    type=int, default=None,
                         help="Sliding-window stride (default: max-seq = non-overlapping)")
-    parser.add_argument("--verbose",   action="store_true",
+    parser.add_argument("--verbose",    action="store_true",
                         help="Print per-window progress")
+    parser.add_argument("--act-levels", type=int, default=16,
+                        help="Activation quantization levels for P-CTLE "
+                             "(default: 16 = 4-bit; use 32 for 5-bit experimental)")
     args = parser.parse_args()
 
     try:
@@ -480,7 +499,8 @@ def main() -> None:
         texts = _DEFAULT_TEXT
 
     if mode == "sentences":
-        print(f"\n  Evaluating {len(texts)} sentences  (max_seq={args.max_seq})")
+        act_note = f"  act_levels={args.act_levels}" if args.act_levels != 16 else ""
+        print(f"\n  Evaluating {len(texts)} sentences  (max_seq={args.max_seq}){act_note}")
 
     print(f"  {'File':<48} {'NLL':>9} {'PPL':>10}  {'Tokens':>9}  {'Time':>7}")
     print(f"  {'-'*48} {'-'*9} {'-'*10}  {'-'*9}  {'-'*7}")
@@ -512,9 +532,13 @@ def main() -> None:
                 max_seq=args.max_seq,
                 stride=stride,
                 verbose=args.verbose,
+                n_act_levels=args.act_levels,
             )
         else:
-            nll, ppl = compute_ppl_sentences(texts, weights, config, sp, args.max_seq)
+            nll, ppl = compute_ppl_sentences(
+                texts, weights, config, sp, args.max_seq,
+                n_act_levels=args.act_levels,
+            )
             n_tok = sum(len(sp.encode(t, out_type=int)) - 1
                         for t in texts if len(sp.encode(t, out_type=int)) >= 2)
 

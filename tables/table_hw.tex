@@ -15,18 +15,25 @@
 \textbf{ms/tok} & \textbf{tok/s} \\
  & \textbf{KB} & \textbf{free KB} & & \\
 \midrule
-INT4U  & 7{,}431 & 21{,}566 & $1{,}040.6\pm0.6$ & $0.961$ \\
-INT4BW & 9{,}285 & 19{,}682 & $1{,}355.8\pm0.4$ & $0.737$ \\
-CTLE   & 7{,}433 & 21{,}566 & $\mathbf{1{,}035.9\pm1.1}$ & $\mathbf{0.965}$ \\
-P-CTLE & 7{,}433 & 21{,}566 & $\mathbf{832.5\pm1.5}$ & $\mathbf{1.201}$ \\
+INT4U            & 7{,}431 & 21{,}566 & $1{,}040.6\pm0.6$ & $0.961$ \\
+INT4BW           & 9{,}285 & 19{,}682 & $1{,}355.8\pm0.4$ & $0.737$ \\
+CTLE             & 7{,}433 & 21{,}566 & $1{,}035.9\pm1.1$ & $0.965$ \\
+P-CTLE (4b act)  & 7{,}433 & 21{,}566 & $\mathbf{832.5\pm0.8}$ & $\mathbf{1.201}$ \\
+\midrule
+\textbf{CTLE-5b} & 9{,}290 & 19{,}798 & $\mathbf{1{,}014.2\pm0.7}$ & $\mathbf{0.986}$ \\
+\textbf{P-CTLE32} (5b act) & 7{,}433 & 21{,}566 & $\mathbf{832.4\pm1.5}$ & $\mathbf{1.201}$ \\
 \bottomrule
 \end{tabular}
 \smallskip
 \begin{minipage}{0.98\columnwidth}
   \footnotesize
   Values are means over prompts with 4, 8, and 6 prefill tokens.
-  INT4BW is slower because each row reads per-group scales from PSRAM.
-  P-CTLE preserves the CTLE footprint and replaces the inner-loop multiply
-  with a product-LUT lookup after 4-bit activation quantisation.
+  INT4BW is 34\,\% slower than CTLE-5b because each matvec row reads
+  per-group scales from PSRAM. CTLE-5b (K=32, 5-bit indices) matches
+  CTLE-4b throughput despite 25\,\% more index bytes --- the 5-byte group
+  decoder amortises the decode overhead over 8 elements.
+  P-CTLE32 replaces 4-bit with 5-bit activation quantisation (512-entry
+  product LUT) at identical throughput to P-CTLE; PPL improves from
+  33.14 to 20.30 on TinyStories.
 \end{minipage}
 \end{table}

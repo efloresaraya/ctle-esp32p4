@@ -21,6 +21,7 @@ CTLE-Kmeans,stories15M_ctle_k16.bin,9.8647,19239.41,19.23,325693
 CTLE-GA,stories15M_ga_k16.bin,9.8582,19114.29,18.98,325693
 CTLE-PSO,stories15M_pso_k16.bin,9.7307,16826.62,15.93,325693
 CTLE-5b,stories15M_ctle5_k32.bin,9.0151,8226.03,10.00,325693
+PCTLE32,stories15M_pctle_k16.bin(act=32),9.8572,19095.01,20.30,325693
 
 # Relative PPL degradation vs FP32 (compression penalty):
 # TinyStories: INT4BW +14.5%, CTLE-5b +6.9%, CTLE-PSO +70.4%

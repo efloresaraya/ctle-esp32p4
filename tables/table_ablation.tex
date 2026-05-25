@@ -25,6 +25,7 @@ CTLE-KM             & 4    &  7.61 & 19.23 & 19{,}239 & 73.6 \\
 CTLE-GA$^\dagger$   & 4    &  7.61 & 18.98 & 19{,}114 & 207.7 \\
 CTLE-PSO$^\dagger$  & 4    &  7.61 & 15.93 & 16{,}827 & 198.3 \\
 P-CTLE$^{\dagger\ddagger}$ & 4 & 7.61 & 33.14 & 29{,}049 & 181.4 \\
+P-CTLE32$^{\dagger\ddagger\S}$ & 4+5 & 7.61 & 20.30 & 19{,}095 & 181.4 \\
 \textbf{CTLE-5b}$^\dagger$ & \textbf{5} & \textbf{9.51} & \textbf{10.00} & 8{,}226 & 374 \\
 \bottomrule
 \end{tabular}
@@ -33,10 +34,11 @@ P-CTLE$^{\dagger\ddagger}$ & 4 & 7.61 & 33.14 & 29{,}049 & 181.4 \\
 \begin{minipage}{0.98\columnwidth}
   \footnotesize
   TS is the 192-token TinyStories probe; WT2 is WikiText-2 with 256-token
-  non-overlapping windows. ``Comp. s'' is offline model compression time and
-  excludes runtime product-LUT rebuilds. $\dagger$~uses K-means warm start.
-  $\ddagger$~also quantises activations to 4 bits at runtime.
-  CTLE-5b uses $K\!=\!32$ centroids with 5-bit packed indices; its footprint
-  equals INT4BW but eliminates per-group PSRAM scale reads.
+  non-overlapping windows. ``Comp. s'' is offline compression time.
+  $\dagger$~uses K-means warm start.
+  $\ddagger$~also quantises activations (4 bits for P-CTLE, 5 bits for P-CTLE32) at runtime.
+  $\S$~same compressed binary as P-CTLE; bits/act column shows weight\,+\,act bits.
+  CTLE-5b: $K\!=\!32$ centroids, 5-bit packed indices; same footprint as INT4BW
+  but eliminates per-group PSRAM scale reads and achieves $+34\,\%$ throughput.
 \end{minipage}
 \end{table}

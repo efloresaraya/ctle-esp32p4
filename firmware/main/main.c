@@ -58,8 +58,12 @@ static const char *TAG = "CTLE";
 #define TAG_INT4U     2u   /* INT4 Uniform  — one scale per tensor   */
 #define TAG_INT4BW    3u   /* INT4 Block-wise — one scale per G=32 cols */
 #define TAG_PCTLE     4u   /* Product-LUT CTLE — same data as CTLE, no mul in inner loop */
+#define TAG_CTLE5     5u   /* CTLE-5b: K=32 centroids, 5-bit packed indices */
 #define INT4_OFFSET   7    /* stored nibble = signed_q + 7 */
-#define PCTLE_LEVELS  16   /* activation quantisation levels (4-bit = 16) */
+/* P-CTLE activation quantisation levels.
+ * 16 = 4-bit (original, 256-entry product LUT)
+ * 32 = 5-bit (experimental, 512-entry product LUT, PPL 33→20) */
+#define PCTLE_LEVELS  32
 
 /* ─── Hardcoded benchmark prompts (pre-tokenized via SentencePiece) ──────── */
 /* "Once upon a time" */
@@ -84,10 +88,13 @@ typedef struct {
     uint32_t rows, cols;
     /* TAG_F32 */
     float   *f32;
-    /* TAG_CTLE */
-    float    lut[16];   /* 64 bytes codebook */
-    /* TAG_INT4U / TAG_INT4BW / TAG_CTLE share nibbles */
+    /* TAG_CTLE / TAG_PCTLE: 16 entries (64B)
+     * TAG_CTLE5:            32 entries (128B) */
+    float    lut[32];
+    /* TAG_CTLE / TAG_PCTLE / TAG_INT4U / TAG_INT4BW: 4-bit nibbles */
     uint8_t *nibbles;
+    /* TAG_CTLE5: 5-bit packed index stream (8 indices per 5 bytes) */
+    uint8_t *pack5;
     /* TAG_INT4U */
     float    scale;
     /* TAG_INT4BW */
@@ -143,8 +150,10 @@ static size_t  g_sram_total_kb   = 0;         /* internal SRAM total (at boot)  
 /* P-CTLE scratch buffers — static to avoid stack overflow.
  * Inference is single-threaded; no mutex needed.
  * Max cols = hidden_dim = 768.                                              */
-static uint8_t s_pctle_a_idx[768];   /* activation indices per GEMV call   */
-static float   s_pctle_lut_p[256];   /* product LUT = lut_a ⊗ lut_w        */
+static uint8_t s_pctle_a_idx[768];              /* activation indices per GEMV call   */
+static float   s_pctle_lut_p[PCTLE_LEVELS*16]; /* product LUT = lut_a[P] ⊗ lut_w[16]
+                                                   P=16→256 entries (1KB)
+                                                   P=32→512 entries (2KB)             */
 
 /* Auto-detect compression format from the tok_emb tensor tag.
  * NOTE: CTLE variants (K-means / GA / PSO) all write TAG_CTLE and are
@@ -154,7 +163,9 @@ static void detect_method(void)
 {
     switch (g_model.tok_emb.tag) {
         case TAG_CTLE:   snprintf(g_method_name, sizeof(g_method_name), "CTLE");   break;
-        case TAG_PCTLE:  snprintf(g_method_name, sizeof(g_method_name), "PCTLE");  break;
+        case TAG_PCTLE:  snprintf(g_method_name, sizeof(g_method_name),
+                                 "PCTLE%d", PCTLE_LEVELS);                         break;
+        case TAG_CTLE5:  snprintf(g_method_name, sizeof(g_method_name), "CTLE5");  break;
         case TAG_INT4U:  snprintf(g_method_name, sizeof(g_method_name), "INT4U");  break;
         case TAG_INT4BW: snprintf(g_method_name, sizeof(g_method_name), "INT4BW"); break;
         case TAG_F32:    snprintf(g_method_name, sizeof(g_method_name), "FP32");   break;
@@ -195,7 +206,18 @@ static esp_err_t read_block(FILE *f, WeightBlock *b)
         b->nibbles = heap_caps_malloc(n_bytes, MALLOC_CAP_SPIRAM);
         if (!b->nibbles) { ESP_LOGE(TAG, "OOM nibbles %lu", (unsigned long)n_bytes); return ESP_ERR_NO_MEM; }
         fread(b->nibbles, 1, n_bytes, f);
-        b->f32 = NULL; b->scales = NULL;
+        b->f32 = NULL; b->scales = NULL; b->pack5 = NULL;
+    } else if (tag == TAG_CTLE5) {
+        /* CTLE-5b: K=32 codebook (128 B) + 5-bit packed index stream */
+        if (fread(&b->rows, 4, 1, f) != 1) return ESP_FAIL;
+        if (fread(&b->cols, 4, 1, f) != 1) return ESP_FAIL;
+        fread(b->lut, sizeof(float), 32, f);          /* 128 bytes */
+        uint32_t n_groups = ((uint32_t)b->rows * b->cols + 7) / 8;
+        uint32_t n_bytes  = n_groups * 5;
+        b->pack5 = heap_caps_malloc(n_bytes, MALLOC_CAP_SPIRAM);
+        if (!b->pack5) { ESP_LOGE(TAG, "OOM CTLE5 pack5 %lu", (unsigned long)n_bytes); return ESP_ERR_NO_MEM; }
+        fread(b->pack5, 1, n_bytes, f);
+        b->f32 = NULL; b->nibbles = NULL; b->scales = NULL;
     } else if (tag == TAG_INT4U) {
         if (fread(&b->rows, 4, 1, f) != 1) return ESP_FAIL;
         if (fread(&b->cols, 4, 1, f) != 1) return ESP_FAIL;
@@ -204,7 +226,7 @@ static esp_err_t read_block(FILE *f, WeightBlock *b)
         b->nibbles = heap_caps_malloc(n_bytes, MALLOC_CAP_SPIRAM);
         if (!b->nibbles) { ESP_LOGE(TAG, "OOM INT4U nibbles %lu", (unsigned long)n_bytes); return ESP_ERR_NO_MEM; }
         fread(b->nibbles, 1, n_bytes, f);
-        b->f32 = NULL; b->scales = NULL;
+        b->f32 = NULL; b->scales = NULL; b->pack5 = NULL;
     } else if (tag == TAG_INT4BW) {
         if (fread(&b->rows,       4, 1, f) != 1) return ESP_FAIL;
         if (fread(&b->cols,       4, 1, f) != 1) return ESP_FAIL;
@@ -218,7 +240,7 @@ static esp_err_t read_block(FILE *f, WeightBlock *b)
         b->nibbles = heap_caps_malloc(n_bytes, MALLOC_CAP_SPIRAM);
         if (!b->nibbles) { ESP_LOGE(TAG, "OOM INT4BW nibbles %lu", (unsigned long)n_bytes); return ESP_ERR_NO_MEM; }
         fread(b->nibbles, 1, n_bytes, f);
-        b->f32 = NULL;
+        b->f32 = NULL; b->pack5 = NULL;
     } else {
         ESP_LOGE(TAG, "Unknown block tag %u", tag);
         return ESP_FAIL;
@@ -340,6 +362,59 @@ static void ctle_matvec(const WeightBlock *wb, const float *x, float *y,
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
+ * CTLE-5b matvec — K=32 codebook, 5-bit packed indices
+ *
+ * Packing layout (matches Python _pack_5bit):
+ *   8 indices per 5 bytes (40 bits).  Index i occupies bits [5i : 5i+5].
+ *   cols must be a multiple of 8 (satisfied for all TinyStories-15M weights:
+ *   dim=288=8×36, hidden=768=8×96).
+ * ════════════════════════════════════════════════════════════════════════════ */
+static inline void decode5_group(const uint8_t *p, uint8_t *out)
+{
+    /* Load 5 bytes into a 64-bit register and extract 8 × 5-bit fields. */
+    uint64_t v = (uint64_t)p[0]
+               | ((uint64_t)p[1] << 8)
+               | ((uint64_t)p[2] << 16)
+               | ((uint64_t)p[3] << 24)
+               | ((uint64_t)p[4] << 32);
+    out[0] = (uint8_t)((v >>  0) & 0x1F);
+    out[1] = (uint8_t)((v >>  5) & 0x1F);
+    out[2] = (uint8_t)((v >> 10) & 0x1F);
+    out[3] = (uint8_t)((v >> 15) & 0x1F);
+    out[4] = (uint8_t)((v >> 20) & 0x1F);
+    out[5] = (uint8_t)((v >> 25) & 0x1F);
+    out[6] = (uint8_t)((v >> 30) & 0x1F);
+    out[7] = (uint8_t)((v >> 35) & 0x1F);
+}
+
+static void ctle5_matvec(const WeightBlock *wb, const float *x, float *y,
+                         int rows, int cols)
+{
+    const float   *lut = wb->lut;   /* 32-entry codebook (128 B) */
+    const uint8_t *p5  = wb->pack5;
+    int groups_per_row = cols / 8;  /* cols is a multiple of 8 */
+
+    for (int r = 0; r < rows; r++) {
+        float acc = 0.0f;
+        uint8_t idx[8];
+        for (int g = 0; g < groups_per_row; g++) {
+            decode5_group(p5, idx);
+            p5 += 5;
+            int base = g << 3;
+            acc += lut[idx[0]] * x[base + 0];
+            acc += lut[idx[1]] * x[base + 1];
+            acc += lut[idx[2]] * x[base + 2];
+            acc += lut[idx[3]] * x[base + 3];
+            acc += lut[idx[4]] * x[base + 4];
+            acc += lut[idx[5]] * x[base + 5];
+            acc += lut[idx[6]] * x[base + 6];
+            acc += lut[idx[7]] * x[base + 7];
+        }
+        y[r] = acc;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
  * P-CTLE matvec — Product-LUT Compressed Tensor-Linear Engine
  *
  * Replaces MAC (acc += x * w) with Product-Lookup-Accumulate:
@@ -377,11 +452,13 @@ static void pctle_matvec(const WeightBlock *wb, const float *x, float *y,
         s_pctle_a_idx[c] = (uint8_t)idx;
     }
 
-    /* 2 ── Build product LUT: 256 multiplications, done once per GEMV */
+    /* 2 ── Build product LUT: PCTLE_LEVELS×16 multiplications, once per GEMV
+     *       Weight codebook always has 16 entries (K=16, 4-bit nibbles).
+     *       LUT index: a_idx * 16 + w_idx  (avoids shift for PCTLE_LEVELS>16) */
     const float *lut_w = wb->lut;
     for (int a = 0; a < PCTLE_LEVELS; a++)
-        for (int w = 0; w < PCTLE_LEVELS; w++)
-            s_pctle_lut_p[(a << 4) | w] = lut_a[a] * lut_w[w];
+        for (int w = 0; w < 16; w++)
+            s_pctle_lut_p[a * 16 + w] = lut_a[a] * lut_w[w];
 
     /* 3 ── Inner loop: lookup-accumulate — zero multiplications */
     const uint8_t *nibbles = wb->nibbles;
@@ -391,12 +468,12 @@ static void pctle_matvec(const WeightBlock *wb, const float *x, float *y,
         int c = 0;
         for (; c + 1 < cols; c += 2) {
             uint8_t b  = nibbles[byte_idx++];
-            acc += s_pctle_lut_p[(s_pctle_a_idx[c]   << 4) | (b & 0x0F)];
-            acc += s_pctle_lut_p[(s_pctle_a_idx[c+1] << 4) | (b >>   4)];
+            acc += s_pctle_lut_p[s_pctle_a_idx[c]   * 16 + (b & 0x0F)];
+            acc += s_pctle_lut_p[s_pctle_a_idx[c+1] * 16 + (b >>   4)];
         }
         if (c < cols) {
             uint8_t b = nibbles[byte_idx++];
-            acc += s_pctle_lut_p[(s_pctle_a_idx[c] << 4) | (b & 0x0F)];
+            acc += s_pctle_lut_p[s_pctle_a_idx[c] * 16 + (b & 0x0F)];
         }
         y[r] = acc;
     }
@@ -474,6 +551,7 @@ static void matvec(const WeightBlock *wb, const float *x, float *y)
     int rows = (int)wb->rows, cols = (int)wb->cols;
     switch (wb->tag) {
         case TAG_CTLE:   ctle_matvec(wb, x, y, rows, cols);      break;
+        case TAG_CTLE5:  ctle5_matvec(wb, x, y, rows, cols);     break;
         case TAG_PCTLE:  pctle_matvec(wb, x, y, rows, cols);     break;
         case TAG_INT4U:  int4u_matvec(wb, x, y, rows, cols);     break;
         case TAG_INT4BW: int4bw_matvec(wb, x, y, rows, cols);    break;
@@ -534,6 +612,18 @@ static void transformer_forward(int token, int pos)
                 uint8_t b   = nb[bi];
                 uint8_t idx = ((base + c) & 1) ? (b >> 4) : (b & 0x0F);
                 s->x[c] = lut[idx];
+            }
+        } else if (emb->tag == TAG_CTLE5) {
+            /* CTLE5 embedding: row token starts at byte (token * cols/8 * 5).
+             * cols=288 is a multiple of 8, so rows are 5-byte-group aligned. */
+            const float   *lut   = emb->lut;
+            const uint8_t *p5row = emb->pack5 + (size_t)token * (cols / 8) * 5;
+            uint8_t idx8[8];
+            for (int g = 0; g < cols / 8; g++) {
+                decode5_group(p5row, idx8);
+                p5row += 5;
+                int b0 = g << 3;
+                for (int k = 0; k < 8; k++) s->x[b0 + k] = lut[idx8[k]];
             }
         } else if (emb->tag == TAG_INT4U) {
             const uint8_t *nb  = emb->nibbles;
@@ -635,9 +725,32 @@ static void transformer_forward(int token, int pos)
                 }
                 s->logits[v] = acc;
             }
+        } else if (emb->tag == TAG_CTLE5) {
+            /* CTLE5 logit projection: sequential 5-bit decode, 8 per group */
+            const float   *lut = emb->lut;
+            const uint8_t *p5  = emb->pack5;
+            int groups_per_row = cols / 8;
+            for (int v = 0; v < MODEL_VOCAB; v++) {
+                float acc = 0.0f;
+                uint8_t idx8[8];
+                for (int g = 0; g < groups_per_row; g++) {
+                    decode5_group(p5, idx8);
+                    p5 += 5;
+                    int b0 = g << 3;
+                    acc += lut[idx8[0]] * s->xb[b0 + 0];
+                    acc += lut[idx8[1]] * s->xb[b0 + 1];
+                    acc += lut[idx8[2]] * s->xb[b0 + 2];
+                    acc += lut[idx8[3]] * s->xb[b0 + 3];
+                    acc += lut[idx8[4]] * s->xb[b0 + 4];
+                    acc += lut[idx8[5]] * s->xb[b0 + 5];
+                    acc += lut[idx8[6]] * s->xb[b0 + 6];
+                    acc += lut[idx8[7]] * s->xb[b0 + 7];
+                }
+                s->logits[v] = acc;
+            }
         } else if (emb->tag == TAG_PCTLE) {
-            /* Logits via P-CTLE: quantise xb[cols], build product LUT,
-             * then lookup-accumulate for all vocab rows (zero muls in loop) */
+            /* Logits via P-CTLE: quantise xb[cols] to PCTLE_LEVELS uniform levels,
+             * build product LUT (PCTLE_LEVELS×16 entries), then lookup-accumulate. */
             float x_min = s->xb[0], x_max = s->xb[0];
             for (int c = 1; c < cols; c++) {
                 if (s->xb[c] < x_min) x_min = s->xb[c];
@@ -649,7 +762,6 @@ static void transformer_forward(int token, int pos)
             float lut_a[PCTLE_LEVELS];
             for (int k = 0; k < PCTLE_LEVELS; k++)
                 lut_a[k] = x_min + k * step;
-            /* a_idx lives in static scratch (cols = MODEL_DIM = 288 ≤ 768) */
             for (int c = 0; c < cols; c++) {
                 int idx = (int)((s->xb[c] - x_min) * inv_step + 0.5f);
                 if (idx < 0)             idx = 0;
@@ -658,8 +770,8 @@ static void transformer_forward(int token, int pos)
             }
             const float *lut_w = emb->lut;
             for (int a = 0; a < PCTLE_LEVELS; a++)
-                for (int w = 0; w < PCTLE_LEVELS; w++)
-                    s_pctle_lut_p[(a << 4) | w] = lut_a[a] * lut_w[w];
+                for (int w = 0; w < 16; w++)
+                    s_pctle_lut_p[a * 16 + w] = lut_a[a] * lut_w[w];
             const uint8_t *nb = emb->nibbles;
             for (int v = 0; v < MODEL_VOCAB; v++) {
                 float acc = 0.0f;
@@ -668,12 +780,12 @@ static void transformer_forward(int token, int pos)
                 for (; c + 1 < cols; c += 2) {
                     int     bi = (base + c) / 2;
                     uint8_t b  = nb[bi];
-                    acc += s_pctle_lut_p[(s_pctle_a_idx[c]   << 4) | (b & 0x0F)];
-                    acc += s_pctle_lut_p[(s_pctle_a_idx[c+1] << 4) | (b >>   4)];
+                    acc += s_pctle_lut_p[s_pctle_a_idx[c]   * 16 + (b & 0x0F)];
+                    acc += s_pctle_lut_p[s_pctle_a_idx[c+1] * 16 + (b >>   4)];
                 }
                 if (c < cols) {
                     uint8_t b = nb[(base + c) / 2];
-                    acc += s_pctle_lut_p[(s_pctle_a_idx[c] << 4) | (b & 0x0F)];
+                    acc += s_pctle_lut_p[s_pctle_a_idx[c] * 16 + (b & 0x0F)];
                 }
                 s->logits[v] = acc;
             }

@@ -45,16 +45,31 @@ CSV,CTLE,lily,7433,2698,6089.6,1036.95,0.964,64,32768,11202,21566,21566,624,570
 # Coherence: prefill_ms/tok ≈ gen_ms/tok (<2%) for all methods → forward pass
 #            dominates; KV-cache growth and sampling overhead are negligible.
 #
-# Key finding: INT4BW is 31% slower than INT4U and CTLE at identical 4-bit budget.
-# Root cause: INT4BW matvec reads per-group scales[rows × n_groups] from PSRAM
-#             (G=32, N=288 → 9 scale reads/row/layer), adding PSRAM bandwidth
-#             on top of the nibble stream. INT4U (single tensor scale) and CTLE
-#             (16-entry LUT in registers) avoid extra PSRAM accesses.
+# Key finding: INT4BW is 31% slower than INT4U and CTLE due to per-group PSRAM scale reads.
+# CTLE-5b (K=32, 5-bit indices) is 34% faster than INT4BW and nearly equals CTLE-4b
+#   throughput — decode5_group (5 bytes→8 indices via uint64 shifts) amortizes well.
+# P-CTLE32 (32 act levels, 512-entry product LUT) retains identical throughput to
+#   P-CTLE (832 ms/tok); the doubled LUT build is amortized over 32000 vocab steps.
+
+CSV,PCTLE,once_upon,7433,2684,3321.5,832.50,1.201,64,32768,11202,21566,21566,617,563
+CSV,PCTLE,tom_dog,7433,2684,6615.4,833.60,1.199,64,32768,11202,21566,21566,617,563
+CSV,PCTLE,lily,7433,2684,4954.8,831.40,1.203,64,32768,11202,21566,21566,617,563
+
+CSV,CTLE5,once_upon,9290,3354,4043.0,1013.43,0.987,64,32768,12970,19798,19798,617,563
+CSV,CTLE5,tom_dog,9290,3354,8014.1,1014.81,0.985,64,32768,12970,19798,19798,617,563
+CSV,CTLE5,lily,9290,3354,5960.0,1014.21,0.986,64,32768,12970,19798,19798,617,563
+
+CSV,PCTLE32,once_upon,7433,2684,3321.5,831.15,1.203,64,32768,11202,21566,21566,617,563
+CSV,PCTLE32,tom_dog,7433,2684,6472.6,834.05,1.199,64,32768,11202,21566,21566,617,563
+CSV,PCTLE32,lily,7433,2684,4877.7,831.93,1.202,64,32768,11202,21566,21566,617,563
 
 # ── Averages ────────────────────────────────────────────────────────────────
-# Method  | Model(KB) | Load(ms) | PSRAM_used(KB) | PSRAM_free(KB) | SRAM_free(KB) | avg_gen_ms_tok | σ    | avg_tok/s | σ
-# INT4U   |    7431   |   2696   |     11202      |     21566      |      570      |    1040.6      | 0.6  |   0.961   | 0.001
-# INT4BW  |    9285   |   3377   |     13086      |     19682      |      570      |    1355.8      | 0.4  |   0.737   | 0.001
-# CTLE    |    7433   |   2698   |     11202      |     21566      |      570      |    1035.9      | 1.1  |   0.965   | 0.001
+# Method   | Model(KB) | PSRAM_free(KB) | avg_gen_ms_tok |  σ   | avg_tok/s | PPL_TS | PPL_WT2
+# INT4U    |    7431   |     21566      |    1040.6      | 0.6  |   0.961   | 11070  | 533069
+# INT4BW   |    9285   |     19682      |    1355.8      | 0.4  |   0.737   |  10.71 |   7120
+# CTLE-PSO |    7433   |     21566      |    1035.9      | 1.1  |   0.965   |  15.93 |  16827
+# PCTLE16  |    7433   |     21566      |     832.5      | 0.8  |   1.201   |  33.14 |  29049
+# CTLE5    |    9290   |     19798      |    1014.2      | 0.7  |   0.986   |  10.00 |   8226  ← new
+# PCTLE32  |    7433   |     21566      |     832.4      | 1.5  |   1.201   |  20.30 |  19095  ← new
 #
 # FP32: model = 60,777 KB >> SPIFFS capacity (13,312 KB) → not deployable on-device.
