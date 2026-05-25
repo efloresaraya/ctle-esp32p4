@@ -1,9 +1,11 @@
 # CTLE-ESP32P4
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20384484.svg)](https://doi.org/10.5281/zenodo.20384484)
+
 **CTLE (Compressed Tensor–LUT Engine)** — Streaming learned-codebook inference for transformer models on ESP32-P4 microcontrollers.
 
 Companion code for:
-> E. Flores, "CTLE: Compressed-Domain TinyLM Inference on an ESP32-P4 Microcontroller," *IEEE Embedded Systems Letters*, 2026 (under review).
+> E. Flores and R. Olivares, "CTLE: Compressed-Domain TinyLM Inference on an ESP32-P4 Microcontroller," *IEEE Embedded Systems Letters*, 2026 (under review).
 
 **Target board:** ESP32-P4 Nano · RISC-V HP @ 360 MHz · 32 MB PSRAM · 16 MB Flash  
 **Model:** TinyStories-15M (Llama-2, 6 layers, d=288, 32 K vocab)
@@ -216,11 +218,20 @@ CTLE-5b packing: 8 indices per 5-byte group. Index `i` occupies bits `[5i : 5i+5
 
 ```bibtex
 @article{flores2026ctle,
-  author  = {Flores, Emilio},
+  author  = {Flores, Emilio and Olivares, Rodrigo},
   title   = {{CTLE}: Compressed-Domain {TinyLM} Inference on an {ESP32-P4} Microcontroller},
   journal = {IEEE Embedded Systems Letters},
   year    = {2026},
   note    = {Under review}
+}
+
+@software{flores2026ctle_code,
+  author    = {Flores, Emilio and Olivares, Rodrigo},
+  title     = {{CTLE-ESP32P4}: Compressed Tensor--{LUT} Engine for {ESP32-P4}},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.20384484},
+  url       = {https://doi.org/10.5281/zenodo.20384484}
 }
 ```
 
