@@ -32,15 +32,17 @@ Tiny language models can fit the application class of Internet-of-Things nodes,
 but their weights still exceed the memory and bandwidth envelope of
 microcontrollers. This letter presents the Compressed Tensor--LUT Engine (CTLE),
 a compressed-domain execution engine for transformer inference on ESP32-P4-class
-devices. CTLE stores each large matrix as a 16-entry learned codebook plus
-packed 4-bit indices, and fuses nibble decoding, LUT access, and accumulation
-inside the matrix--vector kernel without reconstructing dense weights in RAM.
-On TinyStories-15M, CTLE-PSO compresses counted weights from 60.77\,MB to
-7.61\,MB and reduces TinyStories PPL from 19.23 (K-means) to 15.93.
-An ESP32-P4 firmware achieves 0.965\,tok/s with 21.5\,MB PSRAM free.
-A product-LUT variant, P-CTLE, reaches 1.201\,tok/s at the same footprint,
-trading quality for a multiplier-free inner loop and motivating future
-FPGA/RISC-V micro-NPU implementations.
+microcontrollers. CTLE stores each large weight matrix as a 16-entry learned
+codebook plus packed 4-bit indices, and fuses nibble decoding, LUT access, and
+multiply-accumulate inside the matrix--vector kernel, avoiding dense weight
+reconstruction and scale-based dequantization in RAM. On TinyStories-15M,
+CTLE-PSO compresses model weights from 60.77\,MB to 7.61\,MB (7.98$\times$)
+and achieves 0.965\,tok/s on the ESP32-P4 Nano with 21.5\,MB PSRAM free.
+A multi-format firmware comparison shows that INT4 block-wise quantization
+improves quality but incurs a 31\,\% throughput penalty due to per-group scale
+reads from PSRAM. A product-LUT extension, P-CTLE, removes the per-element
+multiply from the inner loop, reaching 1.201\,tok/s at the same footprint as
+a throughput-oriented design point for future FPGA/RISC-V micro-NPU targets.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -77,21 +79,16 @@ or FPGA/NPU-oriented execution.
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Related Work}
 
-MCU inference work emphasizes memory, bandwidth, and energy constraints as
-the primary bottleneck for deploying neural networks on embedded
-targets~\cite{Saha2022,Novac2021,Elhanashi2024}. LUT-based approaches for
-activations~\cite{Rezk2020,Rusci2022} and binarized networks~\cite{Sakr2023}
-have been applied to small models, but not to the streaming weight-index
-execution paradigm that CTLE targets.
-
-LUT-based approaches have been applied to activations and binarized
-operators~\cite{Rezk2020,Rusci2022,Sakr2023}, and LUTIN~\cite{Lin2024}
-converts matrix--vector products into table lookups for low-bit inference. CTLE
-differs in three ways: (i) it uses a \emph{learned, non-uniform} codebook per
-tensor rather than fixed quantization levels; (ii) the LUT is 16 entries (64\,B)
-per matrix, not a lookup over all possible row-activation combinations; and
-(iii) it is implemented as a complete streaming inference engine tested
-end-to-end on a real RISC-V microcontroller.
+MCU inference work emphasizes memory, bandwidth, and energy as primary
+bottlenecks~\cite{Saha2022,Novac2021,Elhanashi2024}. LUT-based methods have
+targeted activation nonlinearities~\cite{Rezk2020,Rusci2022}, binarized
+networks~\cite{Sakr2023}, and low-bit matvec execution~\cite{Lin2024}, but
+not the streaming learned-codebook paradigm used here. CTLE differs from prior
+LUT work in three ways: (i) the codebook is \emph{learned per tensor} via
+K-means or metaheuristic optimization, not fixed quantization levels; (ii) the
+LUT is 16 entries (64\,B) per matrix, small enough to remain register-resident;
+and (iii) it is evaluated end-to-end on a real RISC-V microcontroller with a
+full transformer forward pass.
 
 GPU-oriented LLM quantizers such as GPTQ, SqueezeLLM, LLM.int8(), and
 AWQ~\cite{frantar2023gptq,kim2024squeezellm,dettmers2022llmint8,lin2024awq}
@@ -189,31 +186,32 @@ matvec kernel; no dense dequantized weight matrix is materialized.}
     ctlef/.style={box, fill=techGreen!35},
 ]
 \node[font=\small\bfseries] at (0,2.35)
-    {Transient RAM per weight matrix $W$};
+    {Transient overhead per weight matrix $W$ (this work)};
 \node[dense] (fp32)    at (0, 1.1) {
-    \textbf{Dense FP32 / INT4 / INT8}\\
-    \scriptsize full dequantized $\tilde{W}$ materialized in RAM before matvec
+    \textbf{Naive expand-then-compute (e.g.\ FP32)}\\
+    \scriptsize full dequantized $\tilde{W}$ materialized in SRAM before matvec
 };
 \node[int8s] (int8)    at (0, 0.0) {
-    \textbf{INT4 Block-wise (per-group scales)}\\
-    \scriptsize dense $\tilde{W}$ \emph{plus} scale table read per row-group
+    \textbf{INT4 Block-wise — streaming, per-group scale}\\
+    \scriptsize scale table \texttt{scales[rows$\times$n\_groups]} read from PSRAM
 };
 \node[ctlef] (ctlebox) at (0,-1.1) {
-    \textbf{CTLE 4-bit LUT (ours)}\\
-    \scriptsize 64\,B codebook per tensor — \textbf{no dense $W$ in RAM}
+    \textbf{CTLE — streaming, 64-byte codebook (ours)}\\
+    \scriptsize codebook register-resident; no scale table; no dense $W$
 };
 \draw[->,thick] (fp32.east)    -- +(2.1,0)
-    node[right,font=\scriptsize,align=left]{full weight\\buffer};
+    node[right,font=\scriptsize,align=left]{weight\\buffer};
 \draw[->,thick] (int8.east)    -- +(2.1,0)
-    node[right,font=\scriptsize,align=left]{buffer\,+\,scales};
+    node[right,font=\scriptsize,align=left]{PSRAM\\scale reads};
 \draw[->,thick,techGreen!60!black] (ctlebox.east) -- +(2.1,0)
     node[right,font=\scriptsize,align=left,text=techGreen!60!black]
-    {\textbf{zero}\\transient RAM};
+    {no extra\\PSRAM traffic};
 \end{tikzpicture}
-\caption{Transient-RAM comparison. Standard formats require a dequantized weight
-matrix in SRAM/PSRAM before every matvec; INT4BW adds a per-row-group scale
-table. CTLE eliminates both: a 64-byte codebook per tensor is the only metadata,
-and indices stream directly into the accumulate loop (Fig.~\ref{fig:ctle_arch}).}
+\caption{Memory-overhead comparison for three deployment paths evaluated in this
+work. Naive expand-then-compute materializes a full weight matrix in SRAM;
+INT4BW streams nibbles but reads per-group scales from PSRAM in the hot loop;
+CTLE streams nibbles against a 64-byte register-resident codebook, adding no
+extra PSRAM traffic beyond the index stream (Fig.~\ref{fig:ctle_arch}).}
 \label{fig:representation}
 \end{figure}
 
@@ -249,11 +247,18 @@ INT4BW is 31\,\% slower than CTLE at identical 4-bit index bandwidth
 the second PSRAM access stream introduced by group scales.
 
 The firmware dispatch path is a single tag-switch at the start of each matvec.
-INT4U applies one scalar multiply per lookup; INT4BW applies one per-group scale
-multiply; CTLE applies no multiply---the LUT already contains float centroids
-and the kernel reduces to a load-and-accumulate. P-CTLE extends this to a
-product-LUT kernel where the activation is also quantized, eliminating the
-remaining per-element float multiply in the inner loop.
+INT4U multiplies each quantized index by a single per-tensor scale;
+INT4BW multiplies by a per-group scale that must be loaded from PSRAM for each
+row-group. CTLE eliminates this scale-based dequantization step: centroids are
+stored as FP32 in the codebook, so the inner loop executes
+$\texttt{acc} \mathrel{+}= L_w[\text{w\_idx}] \cdot x_n$ directly---a
+standard multiply-accumulate, but without any preceding scale conversion or
+dense weight reconstruction.
+P-CTLE goes further by additionally quantizing the activation vector $\mathbf{x}$
+to 16 uniform levels and precomputing a 256-entry product LUT
+$L_p[a,w]=L_a[a]\cdot L_w[w]$ once per matvec call. The inner loop then
+becomes $\texttt{acc} \mathrel{+}= L_p[a_\text{idx} \| w_\text{idx}]$,
+removing the per-element float multiply entirely.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -401,30 +406,30 @@ P-CTLE & lily (6) & 812.6 & 832.0 \\
 \end{tabular}
 \end{table}
 
-\paragraph{P-CTLE: product-LUT variant.}
-P-CTLE quantizes the activation vector to 16 uniform levels, builds a 256-entry
-product LUT $L_p[a,w]=L_a[a]\cdot L_w[w]$ (256 multiplications, once per
-matvec call), and then replaces each inner-loop multiply with an indexed lookup.
-Embedding row-select is excluded (no activation to quantize). P-CTLE achieves
-$\mathbf{832.5\pm1.5}$\,ms/tok ($\mathbf{1.201}$\,tok/s), a \textbf{19.6\,\%}
-gain over CTLE, because replacing \texttt{FMUL.S\,+\,FADD.S} with an integer
-address computation and a single \texttt{FADD.S} saves $\approx$4 RISC-V cycles
-per iteration. The per-matvec overhead of 256 multiplications is amortized over
-$M{\times}N$ inner-loop operations (36{,}000:1 for the embedding). The price is
-activation quantization error: PPL rises from 15.93 to 33.14 on TS. P-CTLE is
-therefore a throughput-oriented design point targeting future FPGA/NPU datapaths
-without hardware multipliers in the hot loop, not the default quality setting.
+\paragraph{P-CTLE: throughput-oriented extension.}
+P-CTLE is a hardware-oriented variant of CTLE, not a replacement for CTLE-PSO.
+It quantizes the activation vector to 16 uniform levels and builds a 256-entry
+product LUT $L_p[a,w]=L_a[a]\cdot L_w[w]$ once per matvec call (256
+multiplications, amortized over $M{\times}N$ iterations at 36{,}000:1 for the
+embedding). The inner loop then executes \texttt{acc\,+=\,$L_p$[$a$\_idx\,$\|$\,$w$\_idx]}
+without any per-element float multiply. Embedding token lookup is excluded (row
+select, no matmul). On the ESP32-P4, eliminating \texttt{FMUL.S} from the inner
+loop saves $\approx$4 RISC-V cycles per iteration, yielding
+$\mathbf{832.5\pm1.5}$\,ms/tok ($\mathbf{1.201}$\,tok/s)---a \textbf{19.6\,\%}
+gain over CTLE. The cost is activation quantization error: TinyStories PPL rises
+from 15.93 to 33.14. P-CTLE thus demonstrates that CTLE-compressed tensors can
+be mapped to multiplier-free product-LUT datapaths, motivating future FPGA or
+RISC-V softcore micro-NPU implementations; it is not the default quality setting.
 
-\paragraph{Quality--throughput tradeoff.}
-The choice between INT4BW and CTLE-PSO depends on the deployment constraint.
-INT4BW offers better PPL (10.71 vs.\ 15.93 on TS) but incurs 25\,\% higher
-footprint and a 31\,\% throughput penalty; CTLE-PSO is preferable when minimum
-footprint and maximum throughput are the primary objectives. P-CTLE extends the
-throughput advantage to 19.6\,\% over CTLE at the cost of activation
-quantization error (+108\,\% PPL), making it the appropriate design point for
-hardware targets without efficient multipliers. These trade-offs are stable:
-the quality ordering is consistent across both TS and WT2 corpora, and the
-throughput ordering is consistent across all three test prompts.
+\paragraph{Tradeoff summary.}
+Three distinct operating points emerge. \textbf{INT4BW} offers the best quality
+(PPL\,10.71\,/\,7{,}120) but is 25\,\% larger and 31\,\% slower than CTLE.
+\textbf{CTLE-PSO} gives the best balance of footprint and throughput at identical
+4-bit storage: 0.965\,tok/s, 7.61\,MB, 21.5\,MB PSRAM free.
+\textbf{P-CTLE} maximizes throughput (1.201\,tok/s) at the cost of activation
+quantization error (+108\,\% PPL) and is intended as a hardware-architecture
+design point, not the default inference mode. Rankings are stable across both
+evaluation corpora and all three test prompts.
 
 \paragraph{Reproducibility.}
 Experiments use a fixed ESP-IDF v6.1 build. The model binary is generated by
@@ -439,29 +444,35 @@ Table~\ref{tab:prompt_esl} are derived from these device-side logs.
 \section{Conclusion}
 
 CTLE executes TinyLM transformer layers directly from a 4-bit learned
-codebook-plus-index representation, avoiding dense dequantized weight buffers.
-On ESP32-P4, CTLE-PSO loads a 7.61\,MB model and achieves 0.965\,tok/s while
-leaving 21.5\,MB PSRAM free. PSO improves quality by $-$17.2\,\% PPL vs.\
-K-means on TinyStories ($-$12.5\,\% on WikiText-2) through better optimization
-of the large token embedding tensor, while projection matrices are already near
-K-means optimal. INT4BW achieves the best PPL but is 31\,\% slower due to
-PSRAM scale traffic. P-CTLE demonstrates a multiplier-free hardware path at
-19.6\,\% throughput gain, motivating a future CTLE-NPU streaming micro-NPU on
-FPGA/RISC-V softcore.
+codebook-plus-index representation, avoiding dense weight reconstruction and
+scale-based dequantization. The matvec kernel streams packed nibbles against a
+64-byte register-resident codebook; no intermediate weight buffer is allocated.
+On ESP32-P4, CTLE-PSO loads a 7.61\,MB model and achieves 0.965\,tok/s with
+21.5\,MB PSRAM free. PSO reduces TinyStories PPL by 17.2\,\% over K-means
+by better optimizing the 9.2M-entry embedding tensor; projection matrices are
+already near the K-means optimum. INT4BW achieves the best quality (PPL 10.71)
+but is 31\,\% slower and 25\,\% larger due to per-group PSRAM scale reads.
+P-CTLE removes the per-element multiply from the inner loop via a 256-entry
+product LUT, reaching 1.201\,tok/s; it is a throughput-oriented hardware design
+point, not a quality-optimal configuration.
 
-Limitations include: evaluation on a single TinyLM family; reconstruction-error
-rather than task-loss objective; absence of energy measurements; and
-per-matrix rather than group-wise codebooks. Future work will address RISC-V
-vector (RVV) kernel optimization, hardware power metering, and a Verilog
-product-LUT accelerator.
+Limitations: single TinyLM family; reconstruction-error objective; no energy
+measurement; per-tensor codebooks. Future work includes RVV kernel optimization,
+hardware power metering, and a streaming product-LUT micro-NPU on FPGA.
+A natural extension is \textbf{CTLE-5b}: using $K\!=\!32$ centroids and
+5-bit packed indices. The LUT grows to 128\,B per tensor, the index stream is
+25\,\% wider than CTLE-4b, but the single-LUT streaming pattern is preserved
+and per-group scale reads are avoided. CTLE-5b may narrow the quality gap with
+INT4BW while retaining a more regular PSRAM-access pattern; its 5-bit packing
+decoder overhead must be evaluated experimentally.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section*{Acknowledgments}
 This work was supported by ANID BECAS/DOCTORADO NACIONAL 21242003.
-AI tools (Claude, Anthropic) were used to assist with manuscript editing,
-code drafting, and verification; the author reviewed and validated all
-technical content, experiments, and claims.
+\textit{AI-tool disclosure (IEEE policy):} Claude (Anthropic) was used for
+manuscript editing assistance and code verification. The author is responsible
+for all technical content, experimental results, and claims.
 
 
 \begin{thebibliography}{9}
