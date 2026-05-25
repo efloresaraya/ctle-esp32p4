@@ -36,7 +36,11 @@ env/
 *.swp
 *~
 
-# ── LaTeX intermediates (keep .tex; include compiled ESL PDF) ─────────────────
+# ── LaTeX intermediates + manuscript (paper submitted separately) ─────────────
+paper/ctle_esl.tex
+paper/ctle_esl.pdf
+paper/ctle_p4.tex
+paper/ctle_p4.pdf
 paper/*.aux
 paper/*.bbl
 paper/*.blg
@@ -46,9 +50,7 @@ paper/*.toc
 paper/*.fls
 paper/*.fdb_latexmk
 paper/*.synctex.gz
-paper/ctle_p4.pdf
 paper/texput.log
-# ctle_esl.pdf IS tracked (useful for readers without LaTeX)
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
 tmp/
