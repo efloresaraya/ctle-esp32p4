@@ -1,0 +1,5 @@
+format,metadata_desc,n_tensors,metadata_bytes,metadata_human,ratio_vs_int4bw
+FP32 expand-then-compute,dense reconstructed W in SRAM (largest tensor),43,36864000,36.9 MB,19.4
+INT4 block-wise,"474,624 FP32 group scales (group=32)",43,1898496,1.90 MB,1.0
+CTLE (K=16),43 codebooks x 64 B,43,2752,2.7 kB,690
+CTLE (K=32),43 codebooks x 128 B,43,5504,5.4 kB,345

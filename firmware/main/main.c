@@ -901,7 +901,17 @@ static void run_benchmark(const char *name, const int32_t *prompt, int plen)
         transformer_forward(buf[pos], pos);
     int64_t t_prefill = esp_timer_get_time() - t0;
 
-    /* Generation */
+    /* Generation.
+     *
+     * The MARK lines bracket the generation window for the external power
+     * logger. They are printed at the boundaries only, never inside the loop:
+     * UART activity during the window would add current that correlates with
+     * token rate and would therefore bias the per-format energy comparison.
+     * Flushed immediately so the host timestamp reflects the boundary rather
+     * than when the stdout buffer happens to drain. */
+    printf("MARK,gen_start,%s,%s\n", g_method_name, name);
+    fflush(stdout);
+
     int64_t t1 = esp_timer_get_time();
     int next = sample_top_p(TEMPERATURE);
     buf[n++] = next;
@@ -913,6 +923,9 @@ static void run_benchmark(const char *name, const int32_t *prompt, int plen)
         if (next == 1) break;   /* EOS */
     }
     int64_t t_gen = esp_timer_get_time() - t1;
+
+    printf("MARK,gen_end,%s,%s,%lld\n", g_method_name, name, (long long)t_gen);
+    fflush(stdout);
 
     int gen_toks      = n - plen;
     float prefill_ms  = (float)t_prefill / 1000.0f;
