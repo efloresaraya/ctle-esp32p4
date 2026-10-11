@@ -1,0 +1,19 @@
+# TinyStories perplexity on a held-out sample, review round 2.
+#
+# Reviewer 2 observed that the quality comparison rested on a 192-token probe.
+# This re-runs it on 113,196 tokens drawn from the official TinyStories
+# validation split (roneneldan/TinyStories, 549 stories), which the model never
+# saw in training. Non-overlapping 256-token windows, same evaluator.
+#
+# int4bw_g288 is not a competing format: it is INT4 block-wise with one scale
+# per row instead of one per 32 columns, used to isolate scale traffic in the
+# latency experiment. Its quality cost is reported here for completeness.
+#
+format,weights_file,ppl_heldout_113k,ppl_probe_192,n_tokens
+FP32,model.safetensors,4.32,9.35,113196
+INT4U,stories15M_int4u.bin,9116.82,11070,113196
+INT4BW,stories15M_int4bw.bin,5.14,10.71,113196
+CTLE-PSO,stories15M_pso_k16.bin,7.79,15.93,113196
+CTLE-5b,stories15M_ctle5_k32.bin,4.85,10.00,113196
+P-CTLE32,stories15M_pctle_k16.bin,9.66,20.30,113196
+INT4BW-g288,stories15M_int4bw_g288.bin,5.97,,113196

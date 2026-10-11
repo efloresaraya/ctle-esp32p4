@@ -1,0 +1,23 @@
+# Controlled latency comparison, review round 2.
+#
+# 'original'  = per-format output-projection loops as published in revision 1
+#               (build with -DLMHEAD_EQUALIZED=0).
+# 'equalized' = output-projection loops share one structure across formats:
+#               sequential byte pointer, no per-element division, scale hoisted
+#               to the group (default build).
+#
+# int4bw_g288 is INT4 block-wise with one scale per row instead of one per 32
+# columns: identical kernel and arithmetic, smaller scale stream. The difference
+# from int4bw isolates the cost of scale traffic.
+#
+# ESP32-P4 rev v1.3 @360 MHz, three prompts x 64 generated tokens each.
+#
+variant,weights,model_kb,mean_ms_per_tok,min_ms,max_ms,n_prompts
+equalized,ctle5_k32,9290,1014.26,1013.54,1014.92,3
+equalized,int4bw,9285,920.33,919.70,921.11,3
+equalized,int4bw_g288,7639,852.55,847.21,855.85,3
+equalized,int4u,7431,835.92,834.99,837.07,3
+equalized,pctle_k16,7433,781.13,780.42,781.77,3
+equalized,pso_k16,7433,804.67,803.53,806.27,3
+original,ctle5_k32,9290,1014.27,1013.55,1014.93,3
+original,int4bw,9285,1357.45,1357.02,1357.69,3

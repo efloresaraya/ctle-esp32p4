@@ -47,6 +47,13 @@ static const char *TAG = "CTLE";
 #define MODEL_N_HEADS     6
 #define MODEL_N_KV_HEADS  6
 #define MODEL_VOCAB       32000
+
+/* Output-projection loop structure. 1 = equalized across formats (default,
+ * used from revision 2 on); 0 = the original per-format loops, kept so the
+ * numbers published in revision 1 can be reproduced. */
+#ifndef LMHEAD_EQUALIZED
+#define LMHEAD_EQUALIZED  1
+#endif
 #define MODEL_MAX_SEQ     256
 #define MODEL_HEAD_DIM    (MODEL_DIM / MODEL_N_HEADS)   /* 48 */
 #define MODEL_KV_DIM      (MODEL_DIM * MODEL_N_KV_HEADS / MODEL_N_HEADS) /* 288 */
@@ -711,6 +718,133 @@ static void transformer_forward(int token, int pos)
     {
         const WeightBlock *emb = &g_model.tok_emb;
         int cols = (int)emb->cols;
+#if LMHEAD_EQUALIZED
+        /* ── Equalized output projection ──────────────────────────────────
+         *
+         * Reviewer 2 (round 2) observed that the per-format output loops did
+         * not share a structure: INT4BW applied its scale per element and
+         * computed c/group_size inside the inner loop, while CTLE5 decoded
+         * eight indices per group with neither. Since this projection is
+         * 9.2M of the 15.2M MACs per token, that asymmetry alone could
+         * account for part of the measured gap.
+         *
+         * Every branch below now walks the row through a sequential byte
+         * pointer, with no per-element division and no parity test, and any
+         * scale is hoisted to the group. What remains is the format itself:
+         * a table lookup versus a multiply, and how much metadata has to be
+         * read alongside the weight stream.
+         *
+         * Build with -DLMHEAD_EQUALIZED=0 to restore the original loops and
+         * reproduce the numbers published in the first revision.
+         */
+        if (emb->tag == TAG_CTLE) {
+            const float   *lut = emb->lut;
+            const uint8_t *nb  = emb->nibbles;
+            for (int v = 0; v < MODEL_VOCAB; v++) {
+                const uint8_t *p = nb + (size_t)v * (cols >> 1);
+                float acc = 0.0f;
+                for (int c = 0; c < cols; c += 2) {
+                    uint8_t b = *p++;
+                    acc += lut[b & 0x0F] * s->xb[c];
+                    acc += lut[b >>   4] * s->xb[c + 1];
+                }
+                s->logits[v] = acc;
+            }
+        } else if (emb->tag == TAG_CTLE5) {
+            const float   *lut = emb->lut;
+            const uint8_t *p5  = emb->pack5;
+            int groups_per_row = cols / 8;
+            for (int v = 0; v < MODEL_VOCAB; v++) {
+                float acc = 0.0f;
+                uint8_t idx8[8];
+                for (int g = 0; g < groups_per_row; g++) {
+                    decode5_group(p5, idx8);
+                    p5 += 5;
+                    int b0 = g << 3;
+                    acc += lut[idx8[0]] * s->xb[b0 + 0];
+                    acc += lut[idx8[1]] * s->xb[b0 + 1];
+                    acc += lut[idx8[2]] * s->xb[b0 + 2];
+                    acc += lut[idx8[3]] * s->xb[b0 + 3];
+                    acc += lut[idx8[4]] * s->xb[b0 + 4];
+                    acc += lut[idx8[5]] * s->xb[b0 + 5];
+                    acc += lut[idx8[6]] * s->xb[b0 + 6];
+                    acc += lut[idx8[7]] * s->xb[b0 + 7];
+                }
+                s->logits[v] = acc;
+            }
+        } else if (emb->tag == TAG_PCTLE) {
+            float x_min = s->xb[0], x_max = s->xb[0];
+            for (int c = 1; c < cols; c++) {
+                if (s->xb[c] < x_min) x_min = s->xb[c];
+                if (s->xb[c] > x_max) x_max = s->xb[c];
+            }
+            float step = (x_max - x_min) / (float)(PCTLE_LEVELS - 1);
+            if (step < 1e-8f) step = 1e-8f;
+            float inv_step = 1.0f / step;
+            float lut_a[PCTLE_LEVELS];
+            for (int k = 0; k < PCTLE_LEVELS; k++)
+                lut_a[k] = x_min + k * step;
+            for (int c = 0; c < cols; c++) {
+                int idx = (int)((s->xb[c] - x_min) * inv_step + 0.5f);
+                if (idx < 0)             idx = 0;
+                if (idx >= PCTLE_LEVELS) idx = PCTLE_LEVELS - 1;
+                s_pctle_a_idx[c] = (uint8_t)idx;
+            }
+            const float *lut_w = emb->lut;
+            for (int a = 0; a < PCTLE_LEVELS; a++)
+                for (int w = 0; w < 16; w++)
+                    s_pctle_lut_p[a * 16 + w] = lut_a[a] * lut_w[w];
+            const uint8_t *nb = emb->nibbles;
+            for (int v = 0; v < MODEL_VOCAB; v++) {
+                const uint8_t *p = nb + (size_t)v * (cols >> 1);
+                float acc = 0.0f;
+                for (int c = 0; c < cols; c += 2) {
+                    uint8_t b = *p++;
+                    acc += s_pctle_lut_p[s_pctle_a_idx[c]     * 16 + (b & 0x0F)];
+                    acc += s_pctle_lut_p[s_pctle_a_idx[c + 1] * 16 + (b >>   4)];
+                }
+                s->logits[v] = acc;
+            }
+        } else if (emb->tag == TAG_INT4U) {
+            const uint8_t *nb = emb->nibbles;
+            float sc = emb->scale;
+            for (int v = 0; v < MODEL_VOCAB; v++) {
+                const uint8_t *p = nb + (size_t)v * (cols >> 1);
+                float acc = 0.0f;
+                for (int c = 0; c < cols; c += 2) {
+                    uint8_t b = *p++;
+                    acc += ((float)(b & 0x0F) - INT4_OFFSET) * s->xb[c];
+                    acc += ((float)(b >>   4) - INT4_OFFSET) * s->xb[c + 1];
+                }
+                s->logits[v] = acc * sc;
+            }
+        } else if (emb->tag == TAG_INT4BW) {
+            const uint8_t *nb = emb->nibbles;
+            uint32_t gsz = emb->group_size;
+            uint32_t ng  = ((uint32_t)cols + gsz - 1) / gsz;
+            for (int v = 0; v < MODEL_VOCAB; v++) {
+                const uint8_t *p = nb + (size_t)v * (cols >> 1);
+                const float *row_sc = emb->scales + (size_t)v * ng;
+                float acc = 0.0f;
+                for (uint32_t g = 0; g < ng; g++) {
+                    float sg = row_sc[g];
+                    uint32_t c0 = g * gsz;
+                    uint32_t c1 = c0 + gsz;
+                    if (c1 > (uint32_t)cols) c1 = (uint32_t)cols;
+                    float gacc = 0.0f;
+                    for (uint32_t c = c0; c + 1 < c1; c += 2) {
+                        uint8_t b = *p++;
+                        gacc += ((float)(b & 0x0F) - INT4_OFFSET) * s->xb[c];
+                        gacc += ((float)(b >>   4) - INT4_OFFSET) * s->xb[c + 1];
+                    }
+                    acc += sg * gacc;
+                }
+                s->logits[v] = acc;
+            }
+        } else {
+            f32_matvec(emb->f32, s->xb, s->logits, MODEL_VOCAB, MODEL_DIM);
+        }
+#else
         if (emb->tag == TAG_CTLE) {
             const float   *lut = emb->lut;
             const uint8_t *nb  = emb->nibbles;
@@ -822,6 +956,7 @@ static void transformer_forward(int token, int pos)
         } else {
             f32_matvec(emb->f32, s->xb, s->logits, MODEL_VOCAB, MODEL_DIM);
         }
+#endif
     }
 }
 
