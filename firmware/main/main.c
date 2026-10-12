@@ -1176,7 +1176,25 @@ void app_main(void)
            "psram_total_kb,psram_used_kb,psram_free_kb,psram_lwm_kb,"
            "sram_total_kb,sram_free_kb\n\n");
 
-    /* ── 6. Benchmark — three prompts, fixed seed for reproducibility ─────── */
+    /* ── 6. Idle reference window ─────────────────────────────────────────
+     *
+     * Energy per token is reported as a difference against idle, because the
+     * fixed board overhead (regulator, USB bridge, LEDs, resident PSRAM) is
+     * about 85 % of total draw and identical for every format: comparing
+     * absolute power would bury the differences being measured.
+     *
+     * The reference has to be taken with the model already resident and
+     * nothing generating, so it is bracketed here rather than left to whenever
+     * the operator happens to look at the meter. Long enough to read a display
+     * and for a slow external logger to average over.
+     */
+    printf("MARK,idle_start\n");
+    fflush(stdout);
+    vTaskDelay(pdMS_TO_TICKS(20000));
+    printf("MARK,idle_end\n");
+    fflush(stdout);
+
+    /* ── 7. Benchmark — three prompts, fixed seed for reproducibility ─────── */
     g_rng = 0xCAFEBABEu;
     run_benchmark("once_upon", PROMPT_ONCE_UPON, PROMPT_ONCE_UPON_LEN);
     run_benchmark("tom_dog",   PROMPT_TOM_DOG,   PROMPT_TOM_DOG_LEN);
