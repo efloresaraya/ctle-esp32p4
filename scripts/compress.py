@@ -257,10 +257,10 @@ def main() -> None:
     parser.add_argument("--group-size", type=int, default=None,
                         help="INT4 block-wise scale group size in columns "
                              "(default: the pipeline default, 32). Used for the "
-                             "controlled scale-traffic experiment: with "
+                             "group-size sensitivity experiment: with "
                              "--group-size equal to the row width there is one "
-                             "scale per row, so the kernel and the arithmetic "
-                             "are unchanged and only the scale stream shrinks.")
+                             "scale per row for that width. Larger groups also "
+                             "reduce group operations; this does not isolate memory traffic.")
     parser.add_argument("--seed",     type=int, default=42,
                         help="RNG seed for GA/PSO (default 42)")
     args = parser.parse_args()

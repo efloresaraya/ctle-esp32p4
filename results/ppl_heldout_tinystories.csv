@@ -3,11 +3,12 @@
 # Reviewer 2 observed that the quality comparison rested on a 192-token probe.
 # This re-runs it on 113,196 tokens drawn from the official TinyStories
 # validation split (roneneldan/TinyStories, 549 stories), which the model never
-# saw in training. Non-overlapping 256-token windows, same evaluator.
+# saw in training. The text-file evaluator resets context at each of 2,447
+# nonempty paragraphs (maximum 176 tokens); no paragraph is truncated.
+# This is not the continuous 256-token-window protocol used for WikiText-2.
 #
-# int4bw_g288 is not a competing format: it is INT4 block-wise with one scale
-# per row instead of one per 32 columns, used to isolate scale traffic in the
-# latency experiment. Its quality cost is reported here for completeness.
+# int4bw_g288 is the larger-group INT4BW baseline (G=288). It jointly
+# changes scale traffic and group processing; its quality cost is reported.
 #
 format,weights_file,ppl_heldout_113k,ppl_probe_192,n_tokens
 FP32,model.safetensors,4.32,9.35,113196

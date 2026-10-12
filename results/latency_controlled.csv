@@ -2,13 +2,14 @@
 #
 # 'original'  = per-format output-projection loops as published in revision 1
 #               (build with -DLMHEAD_EQUALIZED=0).
-# 'equalized' = output-projection loops share one structure across formats:
+# 'equalized' = revised output-projection loops use common access principles:
 #               sequential byte pointer, no per-element division, scale hoisted
 #               to the group (default build).
 #
-# int4bw_g288 is INT4 block-wise with one scale per row instead of one per 32
-# columns: identical kernel and arithmetic, smaller scale stream. The difference
-# from int4bw isolates the cost of scale traffic.
+# int4bw_g288 uses G=288 instead of 32: one scale per 288-column row,
+# three per 768-column row. The kernel source is shared, but group arithmetic
+# and loop counts also shrink. This does not isolate scale traffic. Its third
+# prompt ends at EOS after 44 tokens; all other runs produce 64.
 #
 # ESP32-P4 rev v1.3 @360 MHz, three prompts x 64 generated tokens each.
 #

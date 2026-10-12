@@ -48,7 +48,7 @@ static const char *TAG = "CTLE";
 #define MODEL_N_KV_HEADS  6
 #define MODEL_VOCAB       32000
 
-/* Output-projection loop structure. 1 = equalized across formats (default,
+/* Output-projection loop structure. 1 = revised access principles across formats (default,
  * used from revision 2 on); 0 = the original per-format loops, kept so the
  * numbers published in revision 1 can be reproduced. */
 #ifndef LMHEAD_EQUALIZED
@@ -728,11 +728,11 @@ static void transformer_forward(int token, int pos)
          * 9.2M of the 15.2M MACs per token, that asymmetry alone could
          * account for part of the measured gap.
          *
-         * Every branch below now walks the row through a sequential byte
+         * Each branch below walks the row through a sequential byte
          * pointer, with no per-element division and no parity test, and any
-         * scale is hoisted to the group. What remains is the format itself:
-         * a table lookup versus a multiply, and how much metadata has to be
-         * read alongside the weight stream.
+         * scale is hoisted to the group. Decoding width, nesting and accumulation still differ by format.
+         * Varying group size also changes arithmetic and iteration counts;
+         * these comparisons do not isolate memory traffic or decoder cost.
          *
          * Build with -DLMHEAD_EQUALIZED=0 to restore the original loops and
          * reproduce the numbers published in the first revision.
