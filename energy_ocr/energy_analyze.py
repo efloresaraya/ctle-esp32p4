@@ -76,16 +76,38 @@ def summarize(d, tag):
                 dp_mw=dp, dp_spread=max(dps) - min(dps), ms_tok=mean_ms,
                 mj_tok=dp * mean_ms / 1000, n_wdt=len(wdt), n_prompts=len(per))
 
+NAMES = {"int4u": ("INT4U", 7431), "int4bw": ("INT4BW", 9285),
+         "pso_k16": ("CTLE-PSO", 7433), "ctle5_k32": ("CTLE-5b", 9290),
+         "pctle_k16": ("P-CTLE32", 7433)}
+
 if __name__ == "__main__":
     d = sys.argv[1]
-    tags = sorted({os.path.basename(p).rsplit("_serial", 1)[0]
-                   for p in glob.glob(os.path.join(d, "*_serial.log"))})
-    rows = [r for r in (summarize(d, t) for t in tags) if r]
-    print(f"{'formato':10s} {'reposo mW':>16s} {'activo mW':>16s} {'ΔP mW':>12s} {'ms/tok':>8s} {'mJ/tok':>7s}")
-    for r in rows:
-        print(f"{r['tag']:10s} {r['idle_mw']:7.2f}±{r['idle_sd']:4.2f} n={r['idle_n']:<3d} "
-              f"{r['active_mw']:7.2f}±{r['active_sd']:4.2f} n={r['active_n']:<4d} "
-              f"{r['dp_mw']:6.2f} (±{r['dp_spread']/2:.2f}) {r['ms_tok']:8.1f} {r['mj_tok']:7.1f}")
-    with open(os.path.join(d, "energy_summary.csv"), "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()) if rows else ["tag"])
-        w.writeheader(); w.writerows(rows)
+    tags = [t for t in NAMES
+            if os.path.exists(os.path.join(d, f"{t}_serial.log"))]
+    rows, pooled = [], []
+    for t in tags:
+        lines, ocr = load(d, t)
+        idle, gens, wdt, ms = windows(lines)
+        iw = inside(ocr, idle, wdt)
+        pooled += iw
+        act = [statistics.mean(inside(ocr, g, wdt)) for g in gens]
+        rows.append((t, iw, act, statistics.mean(ms)))
+    # Primary: idle window of the same run (idle drifts with temperature).
+    # Sensitivity: one reference pooled over every format's idle window.
+    ref = statistics.mean(pooled)
+    out = os.path.join(d, "energy_summary.csv")
+    with open(out, "w", newline="") as f:
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow(["format", "model_kb", "ms_per_token", "idle_mw", "idle_n",
+                    "active_mw", "delta_p_mw", "mj_per_token",
+                    "delta_p_common_mw", "mj_per_token_common"])
+        for t, iw, act, ms in rows:
+            a, i = statistics.mean(act), statistics.mean(iw)
+            dp, dpc = 1000 * (a - i), 1000 * (a - ref)
+            name, kb = NAMES[t]
+            w.writerow([name, kb, f"{ms:.1f}", f"{1000*i:.2f}", len(iw),
+                        f"{1000*a:.2f}", f"{dp:.2f}", f"{dp*ms/1000:.1f}",
+                        f"{dpc:.2f}", f"{dpc*ms/1000:.1f}"])
+            print(f"{name:9s} delta_p {dp:6.2f} mW  {dp*ms/1000:5.1f} mJ/tok   "
+                  f"pooled {dpc:6.2f} mW  {dpc*ms/1000:5.1f} mJ/tok")
+    print(f"pooled idle reference {1000*ref:.2f} mW over {len(pooled)} frames -> {out}")
