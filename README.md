@@ -138,7 +138,7 @@ power minus a same-run idle window, times latency.
 At 9.51 MB, **CTLE-5b** gives lower TinyStories perplexity than INT4BW (4.85 vs
 5.14); on WikiText-2 the ordering reverses (7,120 vs 8,226). Its speed relative
 to INT4BW depends on the build: 10.2 % slower at `-Og`, 19.5 % faster at
-`-O2`. At `-O2` the codebook kernels draw about 16–20 mW more incremental power
+`-O2`. At `-O2` the codebook kernels draw about 15–20 mW more incremental power
 than the INT4 kernels (98–102 vs 82–83 mW), so most of their latency advantage
 does not carry into energy: CTLE-5b uses 3.7 % less than INT4BW. P-CTLE32 is
 the fastest format at `-Og` and among the slowest at `-O2`, and at `-O2` it
