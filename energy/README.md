@@ -6,8 +6,8 @@
 > which reads the same meter by OCR, with the output-projection loops revised.
 > The 473.5 mW idle reference and the per-format values quoted below belong to
 > that earlier session and to the original loops; see `energy_ocr/README.md`
-> and `results/energy_controlled.csv` for the current ones. The INA219 path was
-> never used for any published number.
+> and `results/opt_levels.csv` (both builds, `-Og` and `-O2`) for the current
+> ones. The INA219 path was never used for any published number.
 
 How the `delta_p_mW` and `mJ_per_token` columns of Table IV, recorded in
 `results/energy_per_token.csv`, were obtained, and how to reproduce them.

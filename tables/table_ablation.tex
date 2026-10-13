@@ -1,13 +1,15 @@
-% table_ablation.tex  — Table I: Quantization method comparison
-% Updated 2026-05-24 with corrected FP32 baseline (PPL=9.35, not 6.92) and
-% WikiText-2 test-set column (non-overlapping windows, stride=256, 325,693 tokens).
+% table_ablation.tex — compression and quality (manuscript Table III).
+% Values: results/ppl_heldout_tinystories.csv (TS), results/wikitext2_ppl.txt
+% (WT2); compression wall times: results/rev2_logs/regen/final/.
 %
 % Usage: \input{tables/table_ablation}
 
 \begin{table}[t]
 \centering
 \footnotesize
-\caption{Compression and quality ablation on TinyStories-15M.}
+\caption{Compression and quality on TinyStories-15M. TS: 113k held-out
+tokens, independent paragraph contexts. --: not reported. Comp.\ s: wall time
+of one regeneration with the published recipe and seed.}
 \label{tab:ablation}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
@@ -16,29 +18,28 @@
 \textbf{Method} & \textbf{Bits} & \textbf{MB} &
 \textbf{PPL TS} & \textbf{PPL WT2} & \textbf{Comp. s} \\
 \midrule
-FP32                & 32   & 60.77 & \phantom{00}9.35 & \phantom{0}6{,}127 & — \\
+FP32                & 32   & 60.77 & 4.32 & 6{,}127 & -- \\
 \midrule
-INT4U               & 4    &  7.61 & 11{,}070 & 533{,}069 & ${<}1$ \\
-INT4BW              & $\sim$5 & 9.51 & 10.71 & \textbf{7{,}120} & ${<}1$ \\
+INT4U               & 4    &  7.61 & 9{,}117 & 533{,}069 & 0.6 \\
+INT4BW              & $\sim$5 & 9.51 & 5.14 & 7{,}120 & 0.5 \\
+INT4BW, $G{=}288$   & $\sim$4.1 & 7.82 & 5.97 & 15{,}477 & 0.5 \\
 \midrule
-CTLE-KM             & 4    &  7.61 & 19.23 & 19{,}239 & 73.6 \\
-CTLE-GA$^\dagger$   & 4    &  7.61 & 18.98 & 19{,}114 & 207.7 \\
-CTLE-PSO$^\dagger$  & 4    &  7.61 & 15.93 & 16{,}827 & 198.3 \\
-P-CTLE$^{\dagger\ddagger}$ & 4 & 7.61 & 33.14 & 29{,}049 & 181.4 \\
-P-CTLE32$^{\dagger\ddagger\S}$ & 4+5 & 7.61 & 20.30 & 19{,}095 & 181.4 \\
-\textbf{CTLE-5b}$^\dagger$ & \textbf{5} & \textbf{9.51} & \textbf{10.00} & 8{,}226 & 374 \\
+CTLE-KM             & 4    &  7.61 & 8.47 & 19{,}239 & 85.1 \\
+CTLE-GA$^\dagger$   & 4    &  7.61 & 8.38 & 19{,}114 & 208.5 \\
+CTLE-PSO$^\dagger$  & 4    &  7.61 & 7.79 & 16{,}827 & 198.2 \\
+P-CTLE32$^{\dagger\ddagger}$ & W4/A5 & 7.61 & 9.66 & 19{,}095 & 208.0 \\
+\textbf{CTLE-5b}$^\dagger$ & \textbf{5} & \textbf{9.51} & \textbf{4.85} & 8{,}226 & 414.6 \\
 \bottomrule
 \end{tabular}
 %
 \smallskip
 \begin{minipage}{0.98\columnwidth}
   \footnotesize
-  TS is the 192-token TinyStories probe; WT2 is WikiText-2 with 256-token
-  non-overlapping windows. ``Comp. s'' is offline compression time.
-  $\dagger$~uses K-means warm start.
-  $\ddagger$~also quantises activations (4 bits for P-CTLE, 5 bits for P-CTLE32) at runtime.
-  $\S$~same compressed binary as P-CTLE; bits/act column shows weight\,+\,act bits.
-  CTLE-5b: $K\!=\!32$ centroids, 5-bit packed indices; same footprint as INT4BW
-  but eliminates per-group PSRAM scale reads and achieves $+34\,\%$ throughput.
+  WT2 is WikiText-2 with 256-token non-overlapping windows. Times are from an
+  Apple M4 Pro (Mac mini, no GPU).
+  $\dagger$~K-means warm start.
+  $\ddagger$~also quantizes activations to 32 levels at run time.
+  CTLE-5b: $K\!=\!32$ centroids, 5-bit packed indices, about the footprint of
+  INT4BW; lower TS perplexity, higher WT2 perplexity.
 \end{minipage}
 \end{table}

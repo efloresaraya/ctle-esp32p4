@@ -40,9 +40,9 @@ sit on one or two adjacent codes.
 
 Board power at idle is about 86 % of the total and drifted upward by 2.6 mW over
 the first session (2.2 mW over the `-Og`/`-O2` session) as the board warmed. `delta_p` is therefore taken against the idle
-window of the same run. Pooling the five idle windows instead changes the
-CTLE-5b versus INT4BW energy difference from +16.6 % to +18.4 % and changes no
-ordering; `energy_analyze.py` reports both.
+window of the same run. In the first session, pooling the five idle windows
+instead changes the CTLE-5b versus INT4BW energy difference from +16.6 % to
++18.4 % and changes no ordering; `energy_analyze.py` reports both.
 
 ## Running it
 

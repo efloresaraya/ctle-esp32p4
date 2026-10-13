@@ -2,7 +2,9 @@
 % Table III — Per-tensor reconstruction error (selected tensors, k=16)
 %
 % Shows where metaheuristics improve over K-means.
-% Full results: all 43 CTLE tensors from compress.py output.
+% Values: RelMSE of the published weights, results/rev2_logs/regen/
+% relmse_published_weights.csv (scripts/relmse_from_bins.py); full per-tensor
+% output in results/rev2_logs/regen/final/compress_*.log.
 % Selected: tok_embeddings (largest), 3 attention, 3 FFN (representative layers).
 %
 % RelMSE = MSE / (mean(w^2) + eps)  — relative reconstruction error
@@ -34,11 +36,11 @@
 \midrule
 \multicolumn{5}{l}{\textit{Feed-forward weights (layer 0)}} \\
 \quad\texttt{w1.0}              & $768\times288$   & \textbf{0.00997} & \textbf{0.00997} & 0.00999 \\
-\quad\texttt{w2.0}              & $288\times768$   & \textbf{0.01442} & 0.01444 & 0.01447 \\
+\quad\texttt{w2.0}              & $288\times768$   & \textbf{0.01442} & 0.01443 & 0.01447 \\
 \quad\texttt{w3.0}              & $768\times288$   & \textbf{0.00968} & \textbf{0.00968} & 0.00969 \\
 \midrule
 \multicolumn{5}{l}{\textit{Deep layers (layer 5)}} \\
-\quad\texttt{wq.5}              & $288\times288$   & 0.01368 & 0.01368 & 0.01370 \\
+\quad\texttt{wq.5}              & $288\times288$   & \textbf{0.01368} & \textbf{0.01368} & 0.01369 \\
 \quad\texttt{w1.5}              & $768\times288$   & \textbf{0.01131} & \textbf{0.01131} & 0.01132 \\
 \quad\texttt{w2.5}              & $288\times768$   & \textbf{0.01332} & \textbf{0.01332} & 0.01345 \\
 \midrule
@@ -54,6 +56,6 @@
   not genuine degradation. K-means finds near-optimal solutions for small
   tensors, confirmed by the identical mean RelMSE across methods.
   PSO's advantage concentrates on \texttt{tok\_emb}: $-$14.9\,\% RelMSE,
-  translating to $-$17.2\,\% PPL (19.23\,$\to$\,15.93 on the 10-sentence corpus).
+  and PSO lowers held-out TinyStories perplexity from 8.47 (K-means) to 7.79.
 \end{minipage}
 \end{table}

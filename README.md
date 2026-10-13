@@ -11,6 +11,26 @@ Companion code for:
 
 ---
 
+## What changed in v1.2.1
+
+- **Fixed: CTLE-KM, CTLE-GA and CTLE-PSO could not be written.** Since P-CTLE
+  was added, `pipeline/export.py` raised a `ValueError` on plain CTLE tensors.
+  The published weight files predate the error and are unaffected.
+- **Regeneration record.** Every format was regenerated once from the
+  published recipe and seed; INT4U, INT4BW (both group sizes), K-means and GA
+  are byte-identical to `weights/`, while the PSO-based formats are close but
+  not identical. The logs, file hashes and wall times are in
+  `results/rev2_logs/regen/`. The compression times in the manuscript's
+  Table III now come from this run.
+- **Table II traced to the weights.** `scripts/relmse_from_bins.py` computes
+  per-tensor RelMSE directly from `weights/*.bin`; it matches every cell of
+  the manuscript's Table II.
+- **Working commands.** The compress, evaluate and generate examples in this
+  README used wrong argument names; they now run as written.
+- **Tables.** `tables/` now matches the manuscript's Tables II–IV; the round-1
+  records `results/hw_benchmark.txt` and `results/hw_pctle.txt` are marked as
+  superseded.
+
 ## What changed in v1.2.0
 
 This release accompanies the second revision of manuscript
@@ -163,7 +183,7 @@ ctle-esp32p4/
 │   └── de.py            # Differential Evolution (experimental)
 ├── scripts/
 │   ├── compress.py      # Main entry-point — generates .bin from safetensors
-│   ├── evaluate.py      # PPL/NLL on TinyStories probe and WikiText-2
+│   ├── evaluate.py      # PPL/NLL on TinyStories (held-out sample) and WikiText-2
 │   ├── generate.py      # CPU-side autoregressive text generation
 │   └── pt_to_safetensors.py  # Convert llama2.c .pt → safetensors
 ├── firmware/
@@ -189,7 +209,7 @@ ctle-esp32p4/
 ├── energy/              # energy-measurement rig (see energy/README.md)
 │   ├── capture_energy.py    # dual-port capture + windowing + analysis
 │   └── ina219_monitor/      # ESP32-S3 power logger firmware
-├── tables/              # LaTeX table fragments generated from results/
+├── tables/              # LaTeX table fragments matching the manuscript; values from results/
 │   ├── table_ablation.tex
 │   ├── table_hw.tex
 │   ├── table_relmse.tex
