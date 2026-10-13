@@ -20,7 +20,7 @@ more, and a frame captured while the display is half-refreshed does not
 satisfy the identity either, so both are rejected. The roles of the three
 numbers are assigned by the same identity, not by their unit letters or
 on-screen position, because the OCR misreads `W` as `v` when the display is
-rotated relative to the camera. In the first session 3,202 of 3,495 frames
+rotated relative to the camera. In the first session 3,202 of 3,465 frames
 (92 %) were kept; in the `-Og`/`-O2` session, 8,064 of 8,744 (92 %).
 
 In the `-Og`/`-O2` session the OCR at first kept only about a third of the

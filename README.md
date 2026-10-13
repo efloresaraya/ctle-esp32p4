@@ -34,8 +34,8 @@ and divided by the group size inside the inner loop, while CTLE-5b did neither.
   "Key results" and `results/opt_levels.csv`.
 - **Withdrawn: CTLE-5b is faster and more energy-efficient than INT4BW, as a
   general statement.** With the revised loops the answer depends on the build.
-  At `-Og`, CTLE-5b has 10.2 % higher latency and 14.6 % more incremental
-  energy per token than INT4BW. At `-O2` it has 19.5 % lower latency and 3.7 %
+  At `-Og`, CTLE-5b has 10.2 % higher latency and 14.5 % more incremental
+  energy per token than INT4BW. At `-O2` it has 19.5 % lower latency and 3.9 %
   less incremental energy.
 - **Withdrawn: the gap is explained by PSRAM scale traffic.** INT4BW with
   `--group-size 288` cuts scale metadata from 1.90 to 0.21 MB and latency by
@@ -137,35 +137,14 @@ power minus a same-run idle window, times latency.
 
 At 9.51 MB, **CTLE-5b** gives lower TinyStories perplexity than INT4BW (4.85 vs
 5.14); on WikiText-2 the ordering reverses (7,120 vs 8,226). Its speed relative
-to INT4BW depends on the build: 10.2 % slower at `-Og`, 19.5 % faster at
-`-O2`. At `-O2` the codebook kernels draw about 15–20 mW more incremental power
+to INT4BW depends on the build: 10.2 % higher latency at `-Og`, 19.5 % lower
+latency at `-O2`. At `-O2` the codebook kernels draw about 15–20 mW more incremental power
 than the INT4 kernels (98–102 vs 82–83 mW), so most of their latency advantage
-does not carry into energy: CTLE-5b uses 3.7 % less than INT4BW. P-CTLE32 is
+does not carry into energy: CTLE-5b uses 3.9 % less than INT4BW in this
+measurement session. P-CTLE32 is
 the fastest format at `-Og` and among the slowest at `-O2`, and at `-O2` it
 generates different tokens than at `-Og`; the other formats generate identical
 tokens in both builds.
-
----|---|---|---|---|---|---|---|---|
-| FP32 (reference) | 32 | 60.77 | 4.32 | 6,127 | — | — | — | — |
-| INT4U | 4 | 7.61 | 9,117 | 533,069 | 835.9 | 1.196 | 76.8 | 64.3 |
-| INT4BW | ~5 | 9.51 | 5.14 | 7,120 | 920.3 | 1.087 | 75.6 | 69.6 |
-| CTLE-PSO | 4 | 7.61 | 7.79 | 16,827 | 804.7 | 1.243 | 81.4 | 65.5 |
-| P-CTLE32 | W4/A5 | 7.61 | 9.66 | 19,095 | 781.1 | 1.280 | 87.4 | 68.3 |
-| **CTLE-5b** | **5** | **9.51** | **4.85** | **8,226** | **1,014.3** | **0.986** | **80.0** | **81.2** |
-| INT4BW, G = 288 | ~4 | 7.82 | 5.97 | — | 852.6 | 1.173 | — | — |
-
-ESP32-P4 Nano at 360 MHz; three prompts, 64 tokens each (INT4BW G = 288: the
-third stops at 44, EOS). Latency excludes prefill and includes sampling. WT2 =
-WikiText-2 test split, 256-token non-overlapping windows. ΔP is generation power
-minus a same-run idle window; mJ/tok is incremental energy, from a separate
-energy campaign.
-
-At 9.51 MB, **CTLE-5b** gives lower TinyStories perplexity than INT4BW (4.85 vs
-5.14) for 10.2 % higher latency and 16.6 % more incremental energy. On
-WikiText-2 the ordering reverses (7,120 vs 8,226). Near 7.6 MB, P-CTLE32 is the
-fastest format and CTLE-PSO has the lowest incremental energy among formats
-that do not collapse; INT4BW with G = 288 (7.82 MB) gives clearly better quality
-than CTLE-PSO (5.97 vs 7.79) for about 6 % more latency, energy not measured.
 
 ---
 
