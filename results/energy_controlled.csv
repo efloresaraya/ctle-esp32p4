@@ -1,0 +1,22 @@
+# Energy per token, review round 2, equalized output-projection loops.
+#
+# Board power read from the inline USB meter (KWS-X1) by OCR of its display,
+# about 3 frames/s; a frame is kept only if the displayed V x A equals the
+# displayed W within 0.2 mW. Serial MARK lines and meter frames share the host
+# clock. Windows are trimmed 2 s at each edge; samples within -0.5/+1.0 s of a
+# task-watchdog dump are masked.
+#
+# The meter quantizes current to 0.5 mA, about 2.45 mW at the 4.90 V bus,
+# although it displays 0.1 mW. Idle drifted upward by ~2.6 mW over the session
+# (thermal), so delta_p uses the idle window of the same run (primary).
+# delta_p_common uses one reference pooled over all five idle windows, as a
+# sensitivity check; it does not change any ordering.
+#
+# All five formats in one session, power never removed, SPIFFS image only.
+#
+format,model_kb,ms_per_token,idle_mw,idle_n,active_mw,delta_p_mw,mj_per_token,delta_p_common_mw,mj_per_token_common
+INT4U,7431,836.8,475.76,51,552.59,76.83,64.3,75.13,62.9
+INT4BW,9285,920.8,476.98,51,552.60,75.62,69.6,75.14,69.2
+CTLE-PSO,7433,804.5,478.05,50,559.42,81.37,65.5,81.96,65.9
+CTLE-5b,9290,1014.6,478.20,52,558.23,80.03,81.2,80.76,81.9
+P-CTLE32,7433,781.4,478.35,50,565.73,87.38,68.3,88.27,69.0

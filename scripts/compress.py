@@ -115,6 +115,7 @@ def compress(
     method: str,
     hw_aware: bool,
     seed: int,
+    group_size: int | None = None,
 ) -> None:
     t0 = time.perf_counter()
 
@@ -178,11 +179,13 @@ def compress(
             print(f"  {name:<50} {shape_str:<20} {'INT4U':<6} {rel_mse:>10.6f}")
         elif method == "int4_blockwise":
             w2d = weights.reshape(weights.shape[0], -1).astype(np.float32)
-            scales, nibbles = int4_blockwise(w2d)
-            rel_mse = reconstruction_error_int4bw(w2d, scales, nibbles)
-            processed[name] = ("int4bw", scales, nibbles, INT4_GROUP_SIZE)
+            gsz = group_size or INT4_GROUP_SIZE
+            scales, nibbles = int4_blockwise(w2d, group_size=gsz)
+            rel_mse = reconstruction_error_int4bw(w2d, scales, nibbles,
+                                                  group_size=gsz)
+            processed[name] = ("int4bw", scales, nibbles, gsz)
             rows, cols = w2d.shape
-            q_bytes = int4bw_size_bytes(rows, cols)
+            q_bytes = int4bw_size_bytes(rows, cols, group_size=gsz)
             total_ctle_bytes += q_bytes
             shape_str = str(weights.shape)
             print(f"  {name:<50} {shape_str:<20} {'INT4BW':<6} {rel_mse:>10.6f}")
@@ -251,6 +254,13 @@ def main() -> None:
                         help="Codebook optimizer: kmeans | ga | pso | de | int4_uniform | int4_blockwise | pctle | pctle_de | ctle5  (default: kmeans)")
     parser.add_argument("--hw-aware", action="store_true",
                         help="GA/PSO/DE: add INT8 fixed-point penalty (hardware-aware)")
+    parser.add_argument("--group-size", type=int, default=None,
+                        help="INT4 block-wise scale group size in columns "
+                             "(default: the pipeline default, 32). Used for the "
+                             "group-size sensitivity experiment: with "
+                             "--group-size equal to the row width there is one "
+                             "scale per row for that width. Larger groups also "
+                             "reduce group operations; this does not isolate memory traffic.")
     parser.add_argument("--seed",     type=int, default=42,
                         help="RNG seed for GA/PSO (default 42)")
     args = parser.parse_args()
@@ -263,6 +273,7 @@ def main() -> None:
         method      = args.method,
         hw_aware    = args.hw_aware,
         seed        = args.seed,
+        group_size  = args.group_size,
     )
 
 

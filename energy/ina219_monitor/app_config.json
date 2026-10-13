@@ -1,0 +1,19 @@
+{
+  "project": "ina219_monitor",
+  "target": "esp32s3",
+  "language": "c",
+  "framework": "esp-idf",
+  "rtos": "freertos",
+  "serial_port": "auto",
+  "baudrate": 115200,
+  "template": "blink_c",
+  "entry": "main/main.c",
+  "board_profile": "generic_esp32",
+  "psram": false,
+  "flash_size": "4MB",
+  "partition_scheme": "single_factory",
+  "log_level": "info",
+  "features": {
+    "usb_serial_jtag": true
+  }
+}

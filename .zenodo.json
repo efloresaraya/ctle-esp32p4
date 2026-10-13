@@ -1,0 +1,34 @@
+{
+  "title": "CTLE-ESP32P4: a streaming learned-codebook engine for TinyLM inference on an ESP32-P4 microcontroller",
+  "upload_type": "software",
+  "description": "<p>Companion code, compressed weights, raw measurement logs and result tables for E. Flores and R. Olivares, \"CTLE: A Streaming Learned-Codebook Engine for TinyLM Inference on an ESP32-P4 Microcontroller,\" IEEE Embedded Systems Letters (under review).</p><p>v1.2.0 accompanies the second revision. The output-projection loops were revised across formats; with them CTLE-5b has 10.2 % higher latency and 16.6 % more incremental energy than INT4 block-wise quantization at 9.51 MB, while keeping lower TinyStories perplexity (4.85 vs 5.14 on 113,196 held-out tokens). The previous speed and energy advantage and its attribution to PSRAM scale traffic are withdrawn. See README.md for the full list of changes.</p>",
+  "creators": [
+    {
+      "name": "Flores, Emilio",
+      "affiliation": "Universidad de las Américas; Universidad de Valparaíso",
+      "orcid": "0000-0002-6714-3597"
+    },
+    {
+      "name": "Olivares, Rodrigo",
+      "affiliation": "Universidad de Valparaíso"
+    }
+  ],
+  "license": "MIT",
+  "keywords": [
+    "TinyML",
+    "embedded inference",
+    "model compression",
+    "microcontrollers",
+    "ESP32-P4",
+    "learned codebook",
+    "TinyLM"
+  ],
+  "notes": "The held-out TinyStories sample in models/ is redistributed under CDLA-Sharing-1.0; see models/TINYSTORIES_LICENSE.md.",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/efloresaraya/ctle-esp32p4",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

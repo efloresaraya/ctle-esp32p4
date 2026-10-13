@@ -1,0 +1,22 @@
+  Loading WikiText-2 (test split) …
+`trust_remote_code` is not supported anymore.
+Please check that the Hugging Face dataset 'wikitext' isn't based on a loading script and remove `trust_remote_code`.
+If the dataset is based on a loading script, please ask the dataset author to remove it and convert it to a standard format like Parquet.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  WikiText-2 test: 326,971 tokens (with LLaMA SentencePiece tokenizer)
+
+  WikiText-2 (test) — sliding window size=256  stride=256
+  NOTE: TinyStories-15M was trained on children-story text, NOT Wikipedia.
+        Absolute PPL will be higher than OPT/LLaMA numbers in the literature.
+        The WikiText-2 column shows the *relative* ordering across compression methods.
+
+  File                                                   NLL        PPL     Tokens     Time
+  ------------------------------------------------ --------- ----------  ---------  -------
+  stories15M_int4bw_g288.bin                          9.6471   15476.99    325,693    20.3s
+  stories15M_int4bw.bin                               8.8707    7120.29    325,693    20.5s
+
+  CSV (corpus=wikitext2,max_seq=256,stride=256):
+  file,nll,ppl,n_tokens
+  stories15M_int4bw_g288.bin,9.6471,15476.99,325693
+  stories15M_int4bw.bin,8.8707,7120.29,325693
+
