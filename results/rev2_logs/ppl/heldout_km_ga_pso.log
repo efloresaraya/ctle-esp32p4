@@ -1,0 +1,14 @@
+
+  Evaluating 2447 sentences  (max_seq=256)
+  File                                                   NLL        PPL     Tokens     Time
+  ------------------------------------------------ --------- ----------  ---------  -------
+  stories15M_kmeans_k16.bin                           2.1360       8.47    113,196    14.5s
+  stories15M_ga_k16.bin                               2.1255       8.38    113,196    15.6s
+  stories15M_pso_k16.bin                              2.0529       7.79    113,196    16.0s
+
+  CSV (corpus=tinystories,max_seq=256):
+  file,nll,ppl,n_tokens
+  stories15M_kmeans_k16.bin,2.1360,8.47,113196
+  stories15M_ga_k16.bin,2.1255,8.38,113196
+  stories15M_pso_k16.bin,2.0529,7.79,113196
+

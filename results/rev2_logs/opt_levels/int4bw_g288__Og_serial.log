@@ -1,0 +1,750 @@
+1791856637.973	�bb���0x3548
+1791856637.973	entry 0x4ff29eda
+1791856637.973	I (25) boot: ESP-IDF v6.1-dev-4650-gcb4a55ace2 2nd stage bootloader
+1791856637.973	I (26) boot: compile time Oct 12 2026 22:31:00
+1791856637.974	I (26) boot: Multicore bootloader
+1791856637.974	I (29) boot: chip revision: v1.3
+1791856637.974	I (30) boot: efuse block revision: v0.3
+1791856637.974	I (34) boot.esp32p4: SPI Speed      : 80MHz
+1791856637.974	I (38) boot.esp32p4: SPI Mode       : DIO
+1791856637.974	I (41) boot.esp32p4: SPI Flash Size : 16MB
+1791856637.974	I (45) boot: Enabling RNG early entropy source...
+1791856637.974	I (50) boot: Partition Table:
+1791856637.974	I (52) boot: ## Label            Usage          Type ST Offset   Length
+1791856637.975	I (59) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+1791856637.975	I (65) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+1791856637.975	I (72) boot:  2 factory          factory app      00 00 00010000 00300000
+1791856637.975	I (78) boot:  3 storage          Unknown data     01 82 00310000 00cf0000
+1791856637.975	I (86) boot: End of partition table
+1791856637.975	I (88) esp_image: segment 0: paddr=00010020 vaddr=40020020 size=0b7a0h ( 47008) map
+1791856637.975	I (105) esp_image: segment 1: paddr=0001b7c8 vaddr=30100000 size=000b4h (   180) load
+1791856637.976	I (107) esp_image: segment 2: paddr=0001b884 vaddr=4ff00000 size=04794h ( 18324) load
+1791856637.976	I (115) esp_image: segment 3: paddr=00020020 vaddr=40000020 size=1fea8h (130728) map
+1791856637.976	I (142) esp_image: segment 4: paddr=0003fed0 vaddr=4ff04794 size=0b194h ( 45460) load
+1791856637.976	I (152) esp_image: segment 5: paddr=0004b06c vaddr=4ff0f980 size=032d8h ( 13016) load
+1791856637.976	I (160) boot: Loaded app from partition at offset 0x10000
+1791856637.976	I (160) boot: Disabling RNG early entropy source...
+1791856637.977	I (172) hex_psram: vendor id    : 0x0d (AP)
+1791856637.977	I (172) hex_psram: Latency      : 0x01 (Fixed)
+1791856637.977	I (172) hex_psram: DriveStr.    : 0x00 (25 Ohm)
+1791856637.977	I (173) hex_psram: dev id       : 0x03 (generation 4)
+1791856637.977	I (177) hex_psram: density      : 0x07 (256 Mbit)
+1791856637.977	I (182) hex_psram: good-die     : 0x06 (Pass)
+1791856637.977	I (186) hex_psram: SRF          : 0x02 (Slow Refresh)
+1791856637.977	I (191) hex_psram: BurstType    : 0x00 ( Wrap)
+1791856637.977	I (195) hex_psram: BurstLen     : 0x03 (2048 Byte)
+1791856637.978	I (199) hex_psram: BitMode      : 0x01 (X16 Mode)
+1791856637.978	I (204) hex_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+1791856637.978	I (209) hex_psram: DriveStrength: 0x00 (1/1)
+1791856637.978	I (213) MSPI Timing: Enter psram timing tuning
+1791856637.978	I (394) esp_psram: Found 32MB PSRAM device
+1791856637.978	I (395) esp_psram: Speed: 80MHz
+1791856637.978	I (396) hex_psram: psram CS IO is dedicated
+1791856637.978	I (396) cpu_start: Multicore app
+1791856637.982	ESP-ROM:esp32p4-eco2-20240710
+1791856637.991	Build:Jul 10 2024
+1791856637.996	rst:0x1 (POWERON),boot:0xf (SPI_FAST_FLASH_BOOT)
+1791856637.996	SPI mode:DIO, clock div:1
+1791856637.996	load:0x4ff33ce0,len:0x1524
+1791856638.002	load:0x4ff29ed0,len:0xef0
+1791856638.002	load:0x4ff2cbd0,len:0x3548
+1791856638.002	entry 0x4ff29eda
+1791856638.015	I (25) boot: ESP-IDF v6.1-dev-4650-gcb4a55ace2 2nd stage bootloader
+1791856638.015	I (26) boot: compile time Oct 12 2026 22:31:00
+1791856638.020	I (26) boot: Multicore bootloader
+1791856638.020	I (29) boot: chip revision: v1.3
+1791856638.026	I (30) boot: efuse block revision: v0.3
+1791856638.032	I (34) boot.esp32p4: SPI Speed      : 80MHz
+1791856638.032	I (38) boot.esp32p4: SPI Mode       : DIO
+1791856638.037	I (41) boot.esp32p4: SPI Flash Size : 16MB
+1791856638.043	I (45) boot: Enabling RNG early entropy source...
+1791856638.043	I (50) boot: Partition Table:
+1791856638.054	I (52) boot: ## Label            Usage          Type ST Offset   Length
+1791856638.059	I (59) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+1791856638.065	I (65) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+1791856638.070	I (72) boot:  2 factory          factory app      00 00 00010000 00300000
+1791856638.076	I (78) boot:  3 storage          Unknown data     01 82 00310000 00cf0000
+1791856638.082	I (86) boot: End of partition table
+1791856638.087	I (88) esp_image: segment 0: paddr=00010020 vaddr=40020020 size=0b7a0h ( 47008) map
+1791856638.093	I (105) esp_image: segment 1: paddr=0001b7c8 vaddr=30100000 size=000b4h (   180) load
+1791856638.104	I (107) esp_image: segment 2: paddr=0001b884 vaddr=4ff00000 size=04794h ( 18324) load
+1791856638.108	I (115) esp_image: segment 3: paddr=00020020 vaddr=40000020 size=1fea8h (130728) map
+1791856638.128	I (141) esp_image: segment 4: paddr=0003fed0 vaddr=4ff04794 size=0b194h ( 45460) load
+1791856638.139	I (152) esp_image: segment 5: paddr=0004b06c vaddr=4ff0f980 size=032d8h ( 13016) load
+1791856638.144	I (160) boot: Loaded app from partition at offset 0x10000
+1791856638.148	I (160) boot: Disabling RNG early entropy source...
+1791856638.156	I (171) hex_psram: vendor id    : 0x0d (AP)
+1791856638.161	I (172) hex_psram: Latency      : 0x01 (Fixed)
+1791856638.167	I (172) hex_psram: DriveStr.    : 0x00 (25 Ohm)
+1791856638.172	I (172) hex_psram: dev id       : 0x03 (generation 4)
+1791856638.172	I (177) hex_psram: density      : 0x07 (256 Mbit)
+1791856638.178	I (182) hex_psram: good-die     : 0x06 (Pass)
+1791856638.183	I (186) hex_psram: SRF          : 0x02 (Slow Refresh)
+1791856638.189	I (190) hex_psram: BurstType    : 0x00 ( Wrap)
+1791856638.194	I (195) hex_psram: BurstLen     : 0x03 (2048 Byte)
+1791856638.194	I (199) hex_psram: BitMode      : 0x01 (X16 Mode)
+1791856638.200	I (204) hex_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+1791856638.206	I (209) hex_psram: DriveStrength: 0x00 (1/1)
+1791856638.207	I (213) MSPI Timing: Enter psram timing tuning
+1791856638.378	I (394) esp_psram: Found 32MB PSRAM device
+1791856638.384	I (394) esp_psram: Speed: 80MHz
+1791856638.384	I (396) hex_psram: psram CS IO is dedicated
+1791856638.386	I (396) cpu_start: Multicore app
+1791856639.704	I (1722) esp_psram: SPI SRAM memory test OK
+1791856639.720	I (1730) cpu_start: GPIO 38 and 37 are used as console UART I/O pins
+1791856639.720	I (1731) cpu_start: Pro cpu start user code
+1791856639.725	I (1731) cpu_start: cpu freq: 360000000 Hz
+1791856639.731	I (1733) app_init: Application information:
+1791856639.731	I (1737) app_init: Project name:     firmware
+1791856639.737	I (1741) app_init: App version:      1
+1791856639.742	I (1744) app_init: Compile time:     Oct 12 2026 22:30:56
+1791856639.748	I (1750) app_init: ELF file SHA256:  120a67193...
+1791856639.753	I (1754) app_init: ESP-IDF:          v6.1-dev-4650-gcb4a55ace2
+1791856639.753	I (1760) efuse_init: Min chip rev:     v1.0
+1791856639.759	I (1763) efuse_init: Max chip rev:     v1.99 
+1791856639.764	I (1767) efuse_init: Chip rev:         v1.3
+1791856639.770	I (1771) heap_init: Initializing. RAM available for dynamic allocation:
+1791856639.775	I (1778) heap_init: At 4FF17440 len 00023B80 (142 KiB): RETENT_RAM
+1791856639.781	I (1784) heap_init: At 4FF3AFC0 len 00004BF0 (18 KiB): RAM
+1791856639.787	I (1789) heap_init: At 4FF40000 len 00060000 (384 KiB): RAM
+1791856639.792	I (1794) heap_init: At 50108080 len 00007F80 (31 KiB): RTCRAM
+1791856639.798	I (1800) heap_init: At 301000B4 len 00001F4C (7 KiB): SPM
+1791856639.803	I (1805) esp_psram: Adding pool of 32768K of PSRAM memory to heap allocator
+1791856639.809	I (1812) spi_flash: detected chip: gd
+1791856639.809	I (1815) spi_flash: flash io: dio
+1791856639.814	I (1818) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+1791856639.825	I (1824) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+1791856639.830	I (1832) sleep_clock: System sleep clock ICG setting initialization
+1791856639.830	I (1838) main_task: Started on CPU0
+1791856639.844	I (1858) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+1791856639.850	I (1858) main_task: Calling app_main()
+1791856639.855	I (1858) CTLE: CTLE-P4 Engine  —  ESP32-P4 Nano (RISC-V HP @360MHz, rev 1.3)
+1791856639.861	I (1858) CTLE: PSRAM : total=32768 KB  free=32765 KB
+1791856639.861	I (1868) CTLE: SRAM  : total=617 KB  free=566 KB
+1791856640.437	I (2458) CTLE: SPIFFS: 12170 KB total, 7701 KB used
+1791856640.541	I (2548) CTLE: PSRAM after RunState: 29117 KB free  (RunState used ~3648 KB)
+1791856640.542	I (2558) CTLE: CTLE v2 — dim=288 layers=6 vocab=32000
+1791856643.302	I (5318) CTLE: Model loaded OK  (7639 KB)
+1791856643.307	I (5318) CTLE: Load time  : 2766 ms
+1791856643.312	I (5318) CTLE: PSRAM after model: 21356 KB free  (model used ~7761 KB)
+1791856643.318	I (5318) CTLE: Detected method : INT4BW  (tok_emb tag=3, model=7822872 B)
+1791856643.318	
+1791856643.332	CSV_HEADER:method,prompt,model_kb,load_ms,prefill_ms,gen_ms_tok,tok_per_sec,tokens_gen,psram_total_kb,psram_used_kb,psram_free_kb,psram_lwm_kb,sram_total_kb,sram_free_kb
+1791856643.332	
+1791856643.332	MARK,idle_start
+1791856663.320	MARK,idle_end
+1791856666.676	MARK,gen_start,INT4BW,once_upon
+1791856668.320	E (30328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856668.325	E (30328) task_wdt:  - IDLE0 (CPU 0)
+1791856668.331	E (30328) task_wdt: Tasks currently running:
+1791856668.331	E (30328) task_wdt: CPU 0: main
+1791856668.336	E (30328) task_wdt: CPU 1: IDLE1
+1791856668.337	E (30328) task_wdt: Print CPU 0 (current core) registers
+1791856668.381	Core  0 register dump:
+1791856668.387	MEPC    : 0x4000d4d0  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856668.398	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856668.403	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x487aada6  
+1791856668.409	A2      : 0x0000006c  A3      : 0x00000097  A4      : 0x00000660  A5      : 0x0000006d  
+1791856668.420	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856668.426	S4      : 0x48000ac0  S5      : 0x00000005  S6      : 0x00000006  S7      : 0x00000006  
+1791856668.437	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856668.442	T3      : 0x00000001  T4      : 0x0000712f  T5      : 0x483b0300  T6      : 0x0000712f  
+1791856668.453	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856668.454	MHARTID : 0x00000000  
+1791856668.458	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856673.320	E (35328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856673.326	E (35328) task_wdt:  - IDLE0 (CPU 0)
+1791856673.331	E (35328) task_wdt: Tasks currently running:
+1791856673.331	E (35328) task_wdt: CPU 0: main
+1791856673.336	E (35328) task_wdt: CPU 1: IDLE1
+1791856673.342	E (35328) task_wdt: Print CPU 0 (current core) registers
+1791856673.342	Core  0 register dump:
+1791856673.348	MEPC    : 0x4000d4be  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856673.359	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856673.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x485fa230  
+1791856673.375	A2      : 0x00000000  A3      : 0x00000076  A4      : 0x00000006  A5      : 0x00000001  
+1791856673.381	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856673.387	S4      : 0x48000ac0  S5      : 0x0000000b  S6      : 0x00000006  S7      : 0x00000006  
+1791856673.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856673.403	T3      : 0x00000001  T4      : 0x0000411b  T5      : 0x483b0300  T6      : 0x0000411b  
+1791856673.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856673.414	MHARTID : 0x00000000  
+1791856673.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856678.320	E (40328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856678.325	E (40328) task_wdt:  - IDLE0 (CPU 0)
+1791856678.331	E (40328) task_wdt: Tasks currently running:
+1791856678.331	E (40328) task_wdt: CPU 0: main
+1791856678.336	E (40328) task_wdt: CPU 1: IDLE1
+1791856678.342	E (40328) task_wdt: Print CPU 0 (current core) registers
+1791856678.342	Core  0 register dump:
+1791856678.348	MEPC    : 0x4000d4ba  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856678.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856678.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x484854c3  
+1791856678.375	A2      : 0x000000e6  A3      : 0x00000068  A4      : 0x00000008  A5      : 0x000000e7  
+1791856678.381	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856678.386	S4      : 0x48000ac0  S5      : 0x00000011  S6      : 0x00000006  S7      : 0x00000006  
+1791856678.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856678.403	T3      : 0x00000001  T4      : 0x000017ad  T5      : 0x483b0300  T6      : 0x000017ad  
+1791856678.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856678.414	MHARTID : 0x00000000  
+1791856678.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856683.320	E (45328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856683.325	E (45328) task_wdt:  - IDLE0 (CPU 0)
+1791856683.331	E (45328) task_wdt: Tasks currently running:
+1791856683.331	E (45328) task_wdt: CPU 0: main
+1791856683.336	E (45328) task_wdt: CPU 1: IDLE1
+1791856683.342	E (45328) task_wdt: Print CPU 0 (current core) registers
+1791856683.342	Core  0 register dump:
+1791856683.347	MEPC    : 0x4000bdc2  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856683.358	TP      : 0x4ff1a010  T0      : 0x00000296  T1      : 0x00000120  T2      : 0x00000296  
+1791856683.364	S0/FP   : 0x48003978  S1      : 0x00000300  A0      : 0x48000f78  A1      : 0x00017490  
+1791856683.375	A2      : 0x480010f8  A3      : 0x00000060  A4      : 0x0000006a  A5      : 0x00000061  
+1791856683.381	A6      : 0x48a53d30  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856683.386	S4      : 0x48000ac0  S5      : 0x00000017  S6      : 0x00000004  S7      : 0x00000006  
+1791856683.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856683.403	T3      : 0x00000001  T4      : 0x00000296  T5      : 0x00000120  T6      : 0x48a5312c  
+1791856683.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856683.414	MHARTID : 0x00000000  
+1791856683.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856688.320	E (50328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856688.325	E (50328) task_wdt:  - IDLE0 (CPU 0)
+1791856688.331	E (50328) task_wdt: Tasks currently running:
+1791856688.331	E (50328) task_wdt: CPU 0: main
+1791856688.336	E (50328) task_wdt: CPU 1: IDLE1
+1791856688.342	E (50328) task_wdt: Print CPU 0 (current core) registers
+1791856688.342	Core  0 register dump:
+1791856688.347	MEPC    : 0x4000bdc6  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856688.358	TP      : 0x4ff1a010  T0      : 0x0000011a  T1      : 0x00000120  T2      : 0x0000011a  
+1791856688.364	S0/FP   : 0x48001878  S1      : 0x00000120  A0      : 0x48000f78  A1      : 0x00009eda  
+1791856688.375	A2      : 0x48001148  A3      : 0x00000074  A4      : 0x000000a6  A5      : 0x00000075  
+1791856688.381	A6      : 0x488b9554  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856688.386	S4      : 0x48000ac0  S5      : 0x0000001d  S6      : 0x00000001  S7      : 0x00000006  
+1791856688.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856688.403	T3      : 0x00000001  T4      : 0x0000011a  T5      : 0x00000120  T6      : 0x488b90d0  
+1791856688.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856688.414	MHARTID : 0x00000000  
+1791856688.419	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856693.320	E (55328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856693.325	E (55328) task_wdt:  - IDLE0 (CPU 0)
+1791856693.331	E (55328) task_wdt: Tasks currently running:
+1791856693.331	E (55328) task_wdt: CPU 0: main
+1791856693.336	E (55328) task_wdt: CPU 1: IDLE1
+1791856693.342	E (55328) task_wdt: Print CPU 0 (current core) registers
+1791856693.342	Core  0 register dump:
+1791856693.347	MEPC    : 0x4000d4dc  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856693.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856693.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x4871bc31  
+1791856693.375	A2      : 0x00000042  A3      : 0x00000077  A4      : 0x48001078  A5      : 0x00000043  
+1791856693.381	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856693.386	S4      : 0x48000ac0  S5      : 0x00000022  S6      : 0x00000006  S7      : 0x00000006  
+1791856693.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856693.403	T3      : 0x00000001  T4      : 0x00006149  T5      : 0x483b0300  T6      : 0x00006149  
+1791856693.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856693.414	MHARTID : 0x00000000  
+1791856693.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856698.319	E (60328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856698.325	E (60328) task_wdt:  - IDLE0 (CPU 0)
+1791856698.330	E (60328) task_wdt: Tasks currently running:
+1791856698.331	E (60328) task_wdt: CPU 0: main
+1791856698.336	E (60328) task_wdt: CPU 1: IDLE1
+1791856698.342	E (60328) task_wdt: Print CPU 0 (current core) registers
+1791856698.342	Core  0 register dump:
+1791856698.347	MEPC    : 0x4000d4f4  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856698.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856698.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x48543582  
+1791856698.375	A2      : 0x000000a4  A3      : 0x00000006  A4      : 0x48001200  A5      : 0x48001204  
+1791856698.381	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856698.386	S4      : 0x48000ac0  S5      : 0x00000028  S6      : 0x00000006  S7      : 0x00000006  
+1791856698.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856698.403	T3      : 0x00000001  T4      : 0x00002ccb  T5      : 0x483b0300  T6      : 0x00002ccb  
+1791856698.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856698.414	MHARTID : 0x00000000  
+1791856698.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856703.319	E (65328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856703.325	E (65328) task_wdt:  - IDLE0 (CPU 0)
+1791856703.330	E (65328) task_wdt: Tasks currently running:
+1791856703.331	E (65328) task_wdt: CPU 0: main
+1791856703.336	E (65328) task_wdt: CPU 1: IDLE1
+1791856703.342	E (65328) task_wdt: Print CPU 0 (current core) registers
+1791856703.342	Core  0 register dump:
+1791856703.347	MEPC    : 0x4000cd3e  RA      : 0x4000cda0  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856703.358	TP      : 0x4ff1a010  T0      : 0x4fc1a058  T1      : 0x0000000f  T2      : 0x00000120  
+1791856703.364	S0/FP   : 0x00000180  S1      : 0x48002978  A0      : 0x00000008  A1      : 0x482f4aec  
+1791856703.375	A2      : 0x00002580  A3      : 0x00000094  A4      : 0x482f7100  A5      : 0x00000025  
+1791856703.381	A6      : 0x00000008  A7      : 0x0000002f  S2      : 0x480013f8  S3      : 0x48001038  
+1791856703.386	S4      : 0x48000ac0  S5      : 0x0000002e  S6      : 0x00000005  S7      : 0x00000002  
+1791856703.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856703.403	T3      : 0x48385c34  T4      : 0x00000006  T5      : 0x00000120  T6      : 0x48abbc58  
+1791856703.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856703.414	MHARTID : 0x00000000  
+1791856703.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856708.320	E (70328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856708.325	E (70328) task_wdt:  - IDLE0 (CPU 0)
+1791856708.330	E (70328) task_wdt: Tasks currently running:
+1791856708.331	E (70328) task_wdt: CPU 0: main
+1791856708.336	E (70328) task_wdt: CPU 1: IDLE1
+1791856708.342	E (70328) task_wdt: Print CPU 0 (current core) registers
+1791856708.342	Core  0 register dump:
+1791856708.347	MEPC    : 0x4000bdde  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856708.358	TP      : 0x4ff1a010  T0      : 0x00000061  T1      : 0x00000120  T2      : 0x00000061  
+1791856708.364	S0/FP   : 0x48001cf8  S1      : 0x00000120  A0      : 0x48000f78  A1      : 0x0000369f  
+1791856708.375	A2      : 0x48000ff0  A3      : 0x0000001e  A4      : 0x00000008  A5      : 0x48000ff4  
+1791856708.381	A6      : 0x488c3ddc  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856708.386	S4      : 0x48000ac0  S5      : 0x00000034  S6      : 0x00000001  S7      : 0x00000006  
+1791856708.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856708.403	T3      : 0x00000001  T4      : 0x00000061  T5      : 0x00000120  T6      : 0x488c3958  
+1791856708.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856708.414	MHARTID : 0x00000000  
+1791856708.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856713.320	E (75328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856713.325	E (75328) task_wdt:  - IDLE0 (CPU 0)
+1791856713.330	E (75328) task_wdt: Tasks currently running:
+1791856713.331	E (75328) task_wdt: CPU 0: main
+1791856713.336	E (75328) task_wdt: CPU 1: IDLE1
+1791856713.342	E (75328) task_wdt: Print CPU 0 (current core) registers
+1791856713.342	Core  0 register dump:
+1791856713.347	MEPC    : 0x4000d500  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856713.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856713.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x486be07d  
+1791856713.375	A2      : 0x0000001a  A3      : 0x00000008  A4      : 0x48000fd0  A5      : 0x0000001b  
+1791856713.381	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856713.386	S4      : 0x48000ac0  S5      : 0x00000039  S6      : 0x00000006  S7      : 0x00000006  
+1791856713.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856713.403	T3      : 0x00000001  T4      : 0x000056df  T5      : 0x483b0300  T6      : 0x000056df  
+1791856713.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856713.414	MHARTID : 0x00000000  
+1791856713.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856718.319	E (80328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856718.325	E (80328) task_wdt:  - IDLE0 (CPU 0)
+1791856718.330	E (80328) task_wdt: Tasks currently running:
+1791856718.330	E (80328) task_wdt: CPU 0: main
+1791856718.336	E (80328) task_wdt: CPU 1: IDLE1
+1791856718.341	E (80328) task_wdt: Print CPU 0 (current core) registers
+1791856718.341	Core  0 register dump:
+1791856718.347	MEPC    : 0x4000d4b6  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856718.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856718.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x484819ee  
+1791856718.375	A2      : 0x0000003c  A3      : 0x00000066  A4      : 0x48001058  A5      : 0x0000003d  
+1791856718.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856718.386	S4      : 0x48000ac0  S5      : 0x0000003f  S6      : 0x00000006  S7      : 0x00000006  
+1791856718.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856718.403	T3      : 0x00000001  T4      : 0x00001745  T5      : 0x483b0300  T6      : 0x00001745  
+1791856718.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856718.414	MHARTID : 0x00000000  
+1791856718.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856721.419	MARK,gen_end,INT4BW,once_upon,54740792
+1791856721.430	I (83438) CTLE: ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1791856721.435	I (83438) CTLE: Method    : INT4BW
+1791856721.441	I (83448) CTLE: Prompt    : once_upon (4 tokens)
+1791856721.441	I (83448) CTLE: Prefill   : 3273.4 ms
+1791856721.447	I (83448) CTLE: Gen speed : 855.3 ms/tok  (1.169 tok/s)
+1791856721.452	I (83458) CTLE: Generated : 64 tokens
+1791856721.457	I (83458) CTLE: Model size: 7639 KB  (loaded in 2766 ms)
+1791856721.463	I (83468) CTLE: PSRAM     : total=32768 KB  used=11412 KB  free=21356 KB  lwm=21356 KB
+1791856721.469	I (83478) CTLE: SRAM      : total=617 KB  free=563 KB
+1791856721.497	TOKENS[once_upon]: 29892 727 471 263 2217 7826 4257 365 2354 29889 2296 18012 304 1708 5377 322 26987 278 3186 2820 902 29889 3118 2462 29892 1183 4446 263 541 357 17652 322 5131 304 17229 372 29892 541 372 9115 29893 3448 29889 13 29931 2354 471 14610 322 3512 304 6592 393 4646 29892 12561 292 1048 278 541 357 17652 29889 512
+1791856721.502	CSV,INT4BW,once_upon,7639,2766,3273.4,855.32,1.169,64,32768,11412,21356,21356,617,563
+1791856723.320	E (85328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856723.325	E (85328) task_wdt:  - IDLE0 (CPU 0)
+1791856723.330	E (85328) task_wdt: Tasks currently running:
+1791856723.331	E (85328) task_wdt: CPU 0: main
+1791856723.336	E (85328) task_wdt: CPU 1: IDLE1
+1791856723.341	E (85328) task_wdt: Print CPU 0 (current core) registers
+1791856723.342	Core  0 register dump:
+1791856723.347	MEPC    : 0x4000bdd2  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856723.358	TP      : 0x4ff1a010  T0      : 0x00000092  T1      : 0x00000120  T2      : 0x00000092  
+1791856723.364	S0/FP   : 0x48000f78  S1      : 0x00000120  A0      : 0x48003978  A1      : 0x0000db08  
+1791856723.375	A2      : 0x480039b8  A3      : 0x00000010  A4      : 0x00000005  A5      : 0x00000044  
+1791856723.380	A6      : 0x488f5878  A7      : 0x00000000  S2      : 0x00000300  S3      : 0x00000120  
+1791856723.386	S4      : 0x48000ac0  S5      : 0x00000002  S6      : 0x00000001  S7      : 0x00000006  
+1791856723.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856723.403	T3      : 0x00000003  T4      : 0x000001b6  T5      : 0x00000300  T6      : 0x488f4af4  
+1791856723.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856723.414	MHARTID : 0x00000000  
+1791856723.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856728.224	MARK,gen_start,INT4BW,tom_dog
+1791856728.319	E (90328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856728.325	E (90328) task_wdt:  - IDLE0 (CPU 0)
+1791856728.330	E (90328) task_wdt: Tasks currently running:
+1791856728.330	E (90328) task_wdt: CPU 0: main
+1791856728.336	E (90328) task_wdt: CPU 1: IDLE1
+1791856728.341	E (90328) task_wdt: Print CPU 0 (current core) registers
+1791856728.342	Core  0 register dump:
+1791856728.347	MEPC    : 0x4000bdc6  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856728.358	TP      : 0x4ff1a010  T0      : 0x00000079  T1      : 0x00000120  T2      : 0x00000079  
+1791856728.364	S0/FP   : 0x48001cf8  S1      : 0x00000120  A0      : 0x48000f78  A1      : 0x00004496  
+1791856728.375	A2      : 0x480013a8  A3      : 0x0000010c  A4      : 0x00000085  A5      : 0x0000010d  
+1791856728.380	A6      : 0x488c3ddc  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856728.386	S4      : 0x48000ac0  S5      : 0x00000008  S6      : 0x00000001  S7      : 0x00000006  
+1791856728.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856728.403	T3      : 0x00000001  T4      : 0x00000079  T5      : 0x00000120  T6      : 0x488c3958  
+1791856728.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856728.414	MHARTID : 0x00000000  
+1791856728.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856733.320	E (95328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856733.325	E (95328) task_wdt:  - IDLE0 (CPU 0)
+1791856733.330	E (95328) task_wdt: Tasks currently running:
+1791856733.331	E (95328) task_wdt: CPU 0: main
+1791856733.336	E (95328) task_wdt: CPU 1: IDLE1
+1791856733.342	E (95328) task_wdt: Print CPU 0 (current core) registers
+1791856733.342	Core  0 register dump:
+1791856733.348	MEPC    : 0x4000d4ea  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856733.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856733.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x487797ac  
+1791856733.375	A2      : 0x00000118  A3      : 0x00000007  A4      : 0x480013d0  A5      : 0x00000245  
+1791856733.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856733.386	S4      : 0x48000ac0  S5      : 0x0000000d  S6      : 0x00000006  S7      : 0x00000006  
+1791856733.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856733.403	T3      : 0x00000001  T4      : 0x00006bb2  T5      : 0x483b0300  T6      : 0x00006bb2  
+1791856733.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856733.414	MHARTID : 0x00000000  
+1791856733.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856738.319	E (100328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856738.325	E (100328) task_wdt:  - IDLE0 (CPU 0)
+1791856738.330	E (100328) task_wdt: Tasks currently running:
+1791856738.330	E (100328) task_wdt: CPU 0: main
+1791856738.336	E (100328) task_wdt: CPU 1: IDLE1
+1791856738.341	E (100328) task_wdt: Print CPU 0 (current core) registers
+1791856738.342	Core  0 register dump:
+1791856738.347	MEPC    : 0x4000d4f4  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856738.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856738.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x485fb6bf  
+1791856738.375	A2      : 0x0000009e  A3      : 0x00000008  A4      : 0x480011e8  A5      : 0x480011ec  
+1791856738.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856738.386	S4      : 0x48000ac0  S5      : 0x00000013  S6      : 0x00000006  S7      : 0x00000006  
+1791856738.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856738.403	T3      : 0x00000001  T4      : 0x0000413f  T5      : 0x483b0300  T6      : 0x0000413f  
+1791856738.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856738.414	MHARTID : 0x00000000  
+1791856738.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856743.319	E (105328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856743.325	E (105328) task_wdt:  - IDLE0 (CPU 0)
+1791856743.330	E (105328) task_wdt: Tasks currently running:
+1791856743.330	E (105328) task_wdt: CPU 0: main
+1791856743.336	E (105328) task_wdt: CPU 1: IDLE1
+1791856743.341	E (105328) task_wdt: Print CPU 0 (current core) registers
+1791856743.342	Core  0 register dump:
+1791856743.347	MEPC    : 0x4000d4f8  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856743.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856743.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x48462c00  
+1791856743.375	A2      : 0x00000020  A3      : 0x00000009  A4      : 0x48000ff0  A5      : 0x48000ff4  
+1791856743.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856743.386	S4      : 0x48000ac0  S5      : 0x00000019  S6      : 0x00000006  S7      : 0x00000006  
+1791856743.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856743.403	T3      : 0x00000001  T4      : 0x000013d7  T5      : 0x483b0300  T6      : 0x000013d7  
+1791856743.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856743.414	MHARTID : 0x00000000  
+1791856743.419	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856748.320	E (110328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856748.325	E (110328) task_wdt:  - IDLE0 (CPU 0)
+1791856748.330	E (110328) task_wdt: Tasks currently running:
+1791856748.331	E (110328) task_wdt: CPU 0: main
+1791856748.336	E (110328) task_wdt: CPU 1: IDLE1
+1791856748.342	E (110328) task_wdt: Print CPU 0 (current core) registers
+1791856748.342	Core  0 register dump:
+1791856748.347	MEPC    : 0x4000bdc2  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856748.358	TP      : 0x4ff1a010  T0      : 0x0000010e  T1      : 0x00000120  T2      : 0x0000010e  
+1791856748.364	S0/FP   : 0x48000f78  S1      : 0x00000120  A0      : 0x48003978  A1      : 0x000195e6  
+1791856748.375	A2      : 0x480040a8  A3      : 0x000001cc  A4      : 0x00000055  A5      : 0x000001cd  
+1791856748.380	A6      : 0x489f19f8  A7      : 0x00000001  S2      : 0x00000300  S3      : 0x00000240  
+1791856748.386	S4      : 0x48000ac0  S5      : 0x0000001f  S6      : 0x00000003  S7      : 0x00000006  
+1791856748.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856748.403	T3      : 0x00000003  T4      : 0x0000032a  T5      : 0x00000300  T6      : 0x489f0c74  
+1791856748.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856748.414	MHARTID : 0x00000000  
+1791856748.419	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856753.319	E (115328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856753.325	E (115328) task_wdt:  - IDLE0 (CPU 0)
+1791856753.330	E (115328) task_wdt: Tasks currently running:
+1791856753.330	E (115328) task_wdt: CPU 0: main
+1791856753.336	E (115328) task_wdt: CPU 1: IDLE1
+1791856753.341	E (115328) task_wdt: Print CPU 0 (current core) registers
+1791856753.341	Core  0 register dump:
+1791856753.347	MEPC    : 0x4000bdbe  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856753.358	TP      : 0x4ff1a010  T0      : 0x0000011a  T1      : 0x00000120  T2      : 0x0000011a  
+1791856753.364	S0/FP   : 0x480013f8  S1      : 0x00000120  A0      : 0x48000f78  A1      : 0x00009eb7  
+1791856753.375	A2      : 0x48001030  A3      : 0x0000002e  A4      : 0x00000085  A5      : 0x0000002f  
+1791856753.380	A6      : 0x488505a4  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856753.386	S4      : 0x48000ac0  S5      : 0x00000025  S6      : 0x00000000  S7      : 0x00000006  
+1791856753.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856753.403	T3      : 0x00000001  T4      : 0x0000011a  T5      : 0x00000120  T6      : 0x48850120  
+1791856753.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856753.414	MHARTID : 0x00000000  
+1791856753.419	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856758.319	E (120328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856758.325	E (120328) task_wdt:  - IDLE0 (CPU 0)
+1791856758.330	E (120328) task_wdt: Tasks currently running:
+1791856758.330	E (120328) task_wdt: CPU 0: main
+1791856758.336	E (120328) task_wdt: CPU 1: IDLE1
+1791856758.341	E (120328) task_wdt: Print CPU 0 (current core) registers
+1791856758.341	Core  0 register dump:
+1791856758.347	MEPC    : 0x4000d4f0  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856758.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856758.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x486921ff  
+1791856758.375	A2      : 0x0000003e  A3      : 0x00000007  A4      : 0x48001068  A5      : 0x4800106c  
+1791856758.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856758.386	S4      : 0x48000ac0  S5      : 0x0000002a  S6      : 0x00000006  S7      : 0x00000006  
+1791856758.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856758.403	T3      : 0x00000001  T4      : 0x000051fe  T5      : 0x483b0300  T6      : 0x000051fe  
+1791856758.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856758.414	MHARTID : 0x00000000  
+1791856758.419	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856763.319	E (125328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856763.325	E (125328) task_wdt:  - IDLE0 (CPU 0)
+1791856763.330	E (125328) task_wdt: Tasks currently running:
+1791856763.330	E (125328) task_wdt: CPU 0: main
+1791856763.336	E (125328) task_wdt: CPU 1: IDLE1
+1791856763.341	E (125328) task_wdt: Print CPU 0 (current core) registers
+1791856763.341	Core  0 register dump:
+1791856763.347	MEPC    : 0x4000d4c6  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856763.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856763.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x48497c02  
+1791856763.375	A2      : 0x000000c4  A3      : 0x00000077  A4      : 0x40029000  A5      : 0x000000c5  
+1791856763.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856763.386	S4      : 0x48000ac0  S5      : 0x00000030  S6      : 0x00000006  S7      : 0x00000006  
+1791856763.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856763.403	T3      : 0x00000001  T4      : 0x000019ba  T5      : 0x483b0300  T6      : 0x000019ba  
+1791856763.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856763.414	MHARTID : 0x00000000  
+1791856763.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856768.319	E (130328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856768.325	E (130328) task_wdt:  - IDLE0 (CPU 0)
+1791856768.330	E (130328) task_wdt: Tasks currently running:
+1791856768.330	E (130328) task_wdt: CPU 0: main
+1791856768.336	E (130328) task_wdt: CPU 1: IDLE1
+1791856768.341	E (130328) task_wdt: Print CPU 0 (current core) registers
+1791856768.341	Core  0 register dump:
+1791856768.347	MEPC    : 0x4000bdde  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856768.358	TP      : 0x4ff1a010  T0      : 0x00000192  T1      : 0x00000120  T2      : 0x00000192  
+1791856768.364	S0/FP   : 0x48004578  S1      : 0x00000300  A0      : 0x48000f78  A1      : 0x0000e23a  
+1791856768.375	A2      : 0x48001048  A3      : 0x00000034  A4      : 0x0000000a  A5      : 0x4800104c  
+1791856768.380	A6      : 0x48a0d600  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856768.386	S4      : 0x48000ac0  S5      : 0x00000036  S6      : 0x00000003  S7      : 0x00000006  
+1791856768.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856768.403	T3      : 0x00000001  T4      : 0x00000192  T5      : 0x00000120  T6      : 0x48a0c9fc  
+1791856768.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856768.414	MHARTID : 0x00000000  
+1791856768.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856773.320	E (135328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856773.325	E (135328) task_wdt:  - IDLE0 (CPU 0)
+1791856773.330	E (135328) task_wdt: Tasks currently running:
+1791856773.331	E (135328) task_wdt: CPU 0: main
+1791856773.336	E (135328) task_wdt: CPU 1: IDLE1
+1791856773.341	E (135328) task_wdt: Print CPU 0 (current core) registers
+1791856773.341	Core  0 register dump:
+1791856773.347	MEPC    : 0x4000d4b2  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856773.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856773.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x487f7977  
+1791856773.375	A2      : 0x0000002e  A3      : 0x00000007  A4      : 0x48001020  A5      : 0x0000002f  
+1791856773.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856773.386	S4      : 0x48000ac0  S5      : 0x0000003b  S6      : 0x00000006  S7      : 0x00000006  
+1791856773.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856773.403	T3      : 0x00000001  T4      : 0x000079b6  T5      : 0x483b0300  T6      : 0x000079b6  
+1791856773.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856773.414	MHARTID : 0x00000000  
+1791856773.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856778.319	E (140328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856778.325	E (140328) task_wdt:  - IDLE0 (CPU 0)
+1791856778.330	E (140328) task_wdt: Tasks currently running:
+1791856778.330	E (140328) task_wdt: CPU 0: main
+1791856778.336	E (140328) task_wdt: CPU 1: IDLE1
+1791856778.341	E (140328) task_wdt: Print CPU 0 (current core) registers
+1791856778.341	Core  0 register dump:
+1791856778.347	MEPC    : 0x4000d4e2  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856778.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856778.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x485aedd4  
+1791856778.375	A2      : 0x00000108  A3      : 0x00000006  A4      : 0x48001390  A5      : 0x00000109  
+1791856778.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856778.386	S4      : 0x48000ac0  S5      : 0x00000041  S6      : 0x00000006  S7      : 0x00000006  
+1791856778.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856778.403	T3      : 0x00000001  T4      : 0x000038bd  T5      : 0x483b0300  T6      : 0x000038bd  
+1791856778.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856778.414	MHARTID : 0x00000000  
+1791856778.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856783.011	MARK,gen_end,INT4BW,tom_dog,54784569
+1791856783.022	I (145028) CTLE: ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1791856783.028	I (145038) CTLE: Method    : INT4BW
+1791856783.033	I (145038) CTLE: Prompt    : tom_dog (8 tokens)
+1791856783.033	I (145038) CTLE: Prefill   : 6650.2 ms
+1791856783.039	I (145048) CTLE: Gen speed : 856.0 ms/tok  (1.168 tok/s)
+1791856783.044	I (145048) CTLE: Generated : 64 tokens
+1791856783.050	I (145058) CTLE: Model size: 7639 KB  (loaded in 2766 ms)
+1791856783.055	I (145058) CTLE: PSRAM     : total=32768 KB  used=11412 KB  free=21356 KB  lwm=21356 KB
+1791856783.061	I (145068) CTLE: SRAM      : total=617 KB  free=563 KB
+1791856783.089	TOKENS[tom_dog]: 29889 2688 750 263 3287 310 2090 8743 297 278 14089 29889 13 13555 8743 29892 4335 322 670 11203 892 1407 9074 14793 29889 2688 3512 304 4335 29915 29879 3699 322 263 371 263 4802 592 284 29889 4335 471 1407 9796 1363 540 263 371 599 278 9687 322 2355 263 343 11770 17803 29889 940 6452 287 670 11203 322
+1791856783.093	CSV,INT4BW,tom_dog,7639,2766,6650.2,856.01,1.168,64,32768,11412,21356,21356,617,563
+1791856783.319	E (145328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856783.325	E (145328) task_wdt:  - IDLE0 (CPU 0)
+1791856783.330	E (145328) task_wdt: Tasks currently running:
+1791856783.330	E (145328) task_wdt: CPU 0: main
+1791856783.336	E (145328) task_wdt: CPU 1: IDLE1
+1791856783.341	E (145328) task_wdt: Print CPU 0 (current core) registers
+1791856783.341	Core  0 register dump:
+1791856783.347	MEPC    : 0x4000bdde  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856783.358	TP      : 0x4ff1a010  T0      : 0x00000225  T1      : 0x00000120  T2      : 0x00000225  
+1791856783.364	S0/FP   : 0x48004578  S1      : 0x00000300  A0      : 0x48000f78  A1      : 0x000134ea  
+1791856783.375	A2      : 0x48001048  A3      : 0x00000034  A4      : 0x0000000a  A5      : 0x4800104c  
+1791856783.380	A6      : 0x4898f540  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856783.386	S4      : 0x48000ac0  S5      : 0x00000000  S6      : 0x00000002  S7      : 0x00000006  
+1791856783.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856783.402	T3      : 0x00000001  T4      : 0x00000225  T5      : 0x00000120  T6      : 0x4898e93c  
+1791856783.413	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856783.414	MHARTID : 0x00000000  
+1791856783.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856788.176	MARK,gen_start,INT4BW,lily
+1791856788.319	E (150328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856788.325	E (150328) task_wdt:  - IDLE0 (CPU 0)
+1791856788.330	E (150328) task_wdt: Tasks currently running:
+1791856788.330	E (150328) task_wdt: CPU 0: main
+1791856788.336	E (150328) task_wdt: CPU 1: IDLE1
+1791856788.341	E (150328) task_wdt: Print CPU 0 (current core) registers
+1791856788.341	Core  0 register dump:
+1791856788.347	MEPC    : 0x4000bdd6  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856788.358	TP      : 0x4ff1a010  T0      : 0x0000001f  T1      : 0x00000120  T2      : 0x0000001f  
+1791856788.364	S0/FP   : 0x48001878  S1      : 0x00000120  A0      : 0x48000f78  A1      : 0x00001186  
+1791856788.375	A2      : 0x48001028  A3      : 0x0000002c  A4      : 0x00000004  A5      : 0x4800102c  
+1791856788.380	A6      : 0x48937614  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856788.386	S4      : 0x48000ac0  S5      : 0x00000006  S6      : 0x00000002  S7      : 0x00000006  
+1791856788.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856788.403	T3      : 0x00000001  T4      : 0x0000001f  T5      : 0x00000120  T6      : 0x48937190  
+1791856788.413	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856788.414	MHARTID : 0x00000000  
+1791856788.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856793.319	E (155328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856793.325	E (155328) task_wdt:  - IDLE0 (CPU 0)
+1791856793.330	E (155328) task_wdt: Tasks currently running:
+1791856793.330	E (155328) task_wdt: CPU 0: main
+1791856793.336	E (155328) task_wdt: CPU 1: IDLE1
+1791856793.341	E (155328) task_wdt: Print CPU 0 (current core) registers
+1791856793.341	Core  0 register dump:
+1791856793.347	MEPC    : 0x4000d4ba  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856793.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856793.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x487eb280  
+1791856793.375	A2      : 0x00000080  A3      : 0x00000067  A4      : 0x00000007  A5      : 0x00000081  
+1791856793.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856793.386	S4      : 0x48000ac0  S5      : 0x0000000b  S6      : 0x00000006  S7      : 0x00000006  
+1791856793.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856793.402	T3      : 0x00000001  T4      : 0x00007854  T5      : 0x483b0300  T6      : 0x00007854  
+1791856793.413	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856793.413	MHARTID : 0x00000000  
+1791856793.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856798.319	E (160328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856798.325	E (160328) task_wdt:  - IDLE0 (CPU 0)
+1791856798.330	E (160328) task_wdt: Tasks currently running:
+1791856798.330	E (160328) task_wdt: CPU 0: main
+1791856798.336	E (160328) task_wdt: CPU 1: IDLE1
+1791856798.341	E (160328) task_wdt: Print CPU 0 (current core) registers
+1791856798.341	Core  0 register dump:
+1791856798.347	MEPC    : 0x4000d4fa  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856798.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856798.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x486773a6  
+1791856798.375	A2      : 0x0000002e  A3      : 0x00000007  A4      : 0x48001020  A5      : 0x48001024  
+1791856798.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856798.386	S4      : 0x48000ac0  S5      : 0x00000011  S6      : 0x00000006  S7      : 0x00000006  
+1791856798.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856798.402	T3      : 0x00000001  T4      : 0x00004f01  T5      : 0x483b0300  T6      : 0x00004f01  
+1791856798.413	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856798.414	MHARTID : 0x00000000  
+1791856798.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856803.319	E (165328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856803.325	E (165328) task_wdt:  - IDLE0 (CPU 0)
+1791856803.330	E (165328) task_wdt: Tasks currently running:
+1791856803.330	E (165328) task_wdt: CPU 0: main
+1791856803.336	E (165328) task_wdt: CPU 1: IDLE1
+1791856803.341	E (165328) task_wdt: Print CPU 0 (current core) registers
+1791856803.341	Core  0 register dump:
+1791856803.347	MEPC    : 0x4000d4f4  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856803.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856803.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x484e7a9a  
+1791856803.375	A2      : 0x000000d4  A3      : 0x00000009  A4      : 0x480012c0  A5      : 0x480012c4  
+1791856803.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856803.386	S4      : 0x48000ac0  S5      : 0x00000017  S6      : 0x00000006  S7      : 0x00000006  
+1791856803.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856803.403	T3      : 0x00000001  T4      : 0x0000229b  T5      : 0x483b0300  T6      : 0x0000229b  
+1791856803.414	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856803.414	MHARTID : 0x00000000  
+1791856803.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856808.319	E (170328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856808.325	E (170328) task_wdt:  - IDLE0 (CPU 0)
+1791856808.330	E (170328) task_wdt: Tasks currently running:
+1791856808.330	E (170328) task_wdt: CPU 0: main
+1791856808.336	E (170328) task_wdt: CPU 1: IDLE1
+1791856808.341	E (170328) task_wdt: Print CPU 0 (current core) registers
+1791856808.341	Core  0 register dump:
+1791856808.347	MEPC    : 0x4000bdaa  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856808.358	TP      : 0x4ff1a010  T0      : 0x00000050  T1      : 0x00000120  T2      : 0x00000050  
+1791856808.364	S0/FP   : 0x48001878  S1      : 0x00000120  A0      : 0x48000f78  A1      : 0x00002d52  
+1791856808.375	A2      : 0x00000006  A3      : 0x000000a4  A4      : 0x00000076  A5      : 0x000000a5  
+1791856808.380	A6      : 0x48ab1854  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856808.386	S4      : 0x48000ac0  S5      : 0x0000001d  S6      : 0x00000005  S7      : 0x00000006  
+1791856808.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856808.402	T3      : 0x00000001  T4      : 0x00000050  T5      : 0x00000120  T6      : 0x48ab13d0  
+1791856808.413	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856808.413	MHARTID : 0x00000000  
+1791856808.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856813.319	E (175328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856813.325	E (175328) task_wdt:  - IDLE0 (CPU 0)
+1791856813.330	E (175328) task_wdt: Tasks currently running:
+1791856813.331	E (175328) task_wdt: CPU 0: main
+1791856813.336	E (175328) task_wdt: CPU 1: IDLE1
+1791856813.341	E (175328) task_wdt: Print CPU 0 (current core) registers
+1791856813.342	Core  0 register dump:
+1791856813.347	MEPC    : 0x4000bda6  RA      : 0x4000beba  SP      : 0x4ff19a10  GP      : 0x4ff10180  
+1791856813.358	TP      : 0x4ff1a010  T0      : 0x000002ea  T1      : 0x00000120  T2      : 0x000002ea  
+1791856813.364	S0/FP   : 0x48003978  S1      : 0x00000300  A0      : 0x48000f78  A1      : 0x0001a3d0  
+1791856813.375	A2      : 0x00000005  A3      : 0x00000060  A4      : 0x00000075  A5      : 0x00000061  
+1791856813.380	A6      : 0x488d9af0  A7      : 0x00000000  S2      : 0x00000120  S3      : 0x00000120  
+1791856813.386	S4      : 0x48000ac0  S5      : 0x00000023  S6      : 0x00000001  S7      : 0x00000006  
+1791856813.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856813.402	T3      : 0x00000001  T4      : 0x000002ea  T5      : 0x00000120  T6      : 0x488d8eec  
+1791856813.413	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856813.414	MHARTID : 0x00000000  
+1791856813.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856818.319	E (180328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856818.325	E (180328) task_wdt:  - IDLE0 (CPU 0)
+1791856818.330	E (180328) task_wdt: Tasks currently running:
+1791856818.330	E (180328) task_wdt: CPU 0: main
+1791856818.336	E (180328) task_wdt: CPU 1: IDLE1
+1791856818.341	E (180328) task_wdt: Print CPU 0 (current core) registers
+1791856818.341	Core  0 register dump:
+1791856818.347	MEPC    : 0x4000d4dc  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856818.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856818.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x48733889  
+1791856818.375	A2      : 0x00000072  A3      : 0x00000078  A4      : 0x48001138  A5      : 0x00000073  
+1791856818.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856818.386	S4      : 0x48000ac0  S5      : 0x00000028  S6      : 0x00000006  S7      : 0x00000006  
+1791856818.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856818.402	T3      : 0x00000001  T4      : 0x000063ed  T5      : 0x483b0300  T6      : 0x000063ed  
+1791856818.413	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856818.414	MHARTID : 0x00000000  
+1791856818.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856823.319	E (185328) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+1791856823.325	E (185328) task_wdt:  - IDLE0 (CPU 0)
+1791856823.330	E (185328) task_wdt: Tasks currently running:
+1791856823.330	E (185328) task_wdt: CPU 0: main
+1791856823.336	E (185328) task_wdt: CPU 1: IDLE1
+1791856823.341	E (185328) task_wdt: Print CPU 0 (current core) registers
+1791856823.341	Core  0 register dump:
+1791856823.347	MEPC    : 0x4000d4ba  RA      : 0x4000d07c  SP      : 0x4ff19a30  GP      : 0x4ff10180  
+1791856823.358	TP      : 0x4ff1a010  T0      : 0x48390afc  T1      : 0x00000120  T2      : 0x00000120  
+1791856823.364	S0/FP   : 0x4ff14a0c  S1      : 0x48000f78  A0      : 0x00000120  A1      : 0x485437c0  
+1791856823.374	A2      : 0x000000a0  A3      : 0x00000087  A4      : 0x00000007  A5      : 0x000000a1  
+1791856823.380	A6      : 0x00000120  A7      : 0x00000000  S2      : 0x4800456c  S3      : 0x48001338  
+1791856823.386	S4      : 0x48000ac0  S5      : 0x0000002e  S6      : 0x00000006  S7      : 0x00000006  
+1791856823.397	S8      : 0x48000f78  S9      : 0x48384af4  S10     : 0x4838aaf8  S11     : 0x48000af8  
+1791856823.402	T3      : 0x00000001  T4      : 0x00002ccf  T5      : 0x483b0300  T6      : 0x00002ccf  
+1791856823.413	MSTATUS : 0x00001888  MTVEC   : 0x4ff00003  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
+1791856823.413	MHARTID : 0x00000000  
+1791856823.418	Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+1791856825.461	MARK,gen_end,INT4BW,lily,37282384
+1791856825.473	I (187478) CTLE: ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1791856825.478	I (187488) CTLE: Method    : INT4BW
+1791856825.484	I (187488) CTLE: Prompt    : lily (6 tokens)
+1791856825.484	I (187488) CTLE: Prefill   : 5010.8 ms
+1791856825.489	I (187498) CTLE: Gen speed : 847.3 ms/tok  (1.180 tok/s)
+1791856825.495	I (187498) CTLE: Generated : 44 tokens
+1791856825.500	I (187508) CTLE: Model size: 7639 KB  (loaded in 2766 ms)
+1791856825.506	I (187508) CTLE: PSRAM     : total=32768 KB  used=11412 KB  free=21356 KB  lwm=21356 KB
+1791856825.511	I (187518) CTLE: SRAM      : total=617 KB  free=563 KB
+1791856825.528	TOKENS[lily]: 471 1407 9796 29889 13 10401 365 2354 322 5918 3897 1781 7875 29892 896 723 1708 322 10569 4208 29889 5918 471 1407 9796 1363 540 750 263 716 5121 29889 1126 393 338 278 5828 310 5918 278 2217 7826 29889 1
+1791856825.538	CSV,INT4BW,lily,7639,2766,5010.8,847.33,1.180,44,32768,11412,21356,21356,617,563

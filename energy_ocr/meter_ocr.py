@@ -8,7 +8,11 @@ Every reading is checked by V x A = W.
 import re, Vision
 from Foundation import NSData, NSURL
 
-NUM = re.compile(r"(\d\.\d{4})\s*([VvAaWw])?")
+NUM = re.compile(r"(\d[.,]\d{4})\s*([VvAaWw])?")
+# The large blue voltage digits sometimes lose their decimal point in the OCR
+# ("49075V"). The bus is near 5 V, so five digits followed by V can only mean
+# d.dddd; the V x A = W check still decides whether the frame is kept.
+NUM_V_NODOT = re.compile(r"(?<![\d.,])(\d)(\d{4})\s*[Vv]\b")
 TOL_W = 0.0002          # observed residuals are within 0.05 mW; one wrong digit in A moves V*A by 0.5 mW
 
 def _observations(handler):
@@ -41,7 +45,9 @@ def parse(observations):
     A misread digit breaks that identity, so the reading is rejected.
     """
     from itertools import permutations
-    vals = [float(m.group(1)) for text, _ in observations for m in NUM.finditer(text)]
+    vals = [float(m.group(1).replace(",", ".")) for text, _ in observations for m in NUM.finditer(text)]
+    vals += [float(f"{m.group(1)}.{m.group(2)}") for text, _ in observations
+             for m in NUM_V_NODOT.finditer(text)]
     best = None
     for v, a, w in permutations(vals, 3):
         if not (4.0 <= v <= 5.6 and 0.0 < a < 0.5 and 0.2 <= w <= 1.5):

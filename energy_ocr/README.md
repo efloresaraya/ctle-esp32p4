@@ -20,8 +20,16 @@ more, and a frame captured while the display is half-refreshed does not
 satisfy the identity either, so both are rejected. The roles of the three
 numbers are assigned by the same identity, not by their unit letters or
 on-screen position, because the OCR misreads `W` as `v` when the display is
-rotated relative to the camera. In the published session 3,202 of 3,495 frames
-(92 %) were kept.
+rotated relative to the camera. In the first session 3,202 of 3,495 frames
+(92 %) were kept; in the `-Og`/`-O2` session, 8,064 of 8,744 (92 %).
+
+In the `-Og`/`-O2` session the OCR at first kept only about a third of the
+frames: it often read the large voltage digits with a comma or without their
+decimal point. The parser now accepts both (a five-digit voltage can only mean
+d.dddd near a 5 V bus); the `V × A = W` check still decides every frame. That
+session was restarted from the beginning with the new parser, so all of its
+runs use it, and `opt_levels_run.py` stores the OCR text of every frame
+(`*_ocr_raw.tsv`) so that the readings can be parsed again.
 
 ## What the meter can and cannot resolve
 
@@ -31,7 +39,7 @@ average of hundreds of frames, and idle readings, which carry little load noise,
 sit on one or two adjacent codes.
 
 Board power at idle is about 86 % of the total and drifted upward by 2.6 mW over
-the session as the board warmed. `delta_p` is therefore taken against the idle
+the first session (2.2 mW over the `-Og`/`-O2` session) as the board warmed. `delta_p` is therefore taken against the idle
 window of the same run. Pooling the five idle windows instead changes the
 CTLE-5b versus INT4BW energy difference from +16.6 % to +18.4 % and changes no
 ordering; `energy_analyze.py` reports both.
@@ -68,4 +76,6 @@ packet", which looks like a baud-rate or wiring fault but is not.
 | `meter_ocr.py` | OCR of one frame and the `V × A = W` check |
 | `energy_run.py` | One format: flash, reset, record serial and meter together |
 | `energy_analyze.py` | Windows, trimming, watchdog masking, delta-P and mJ/token |
-| `energy_campaign.sh` | The five formats in one thermal session |
+| `energy_campaign.sh` | The five formats in one thermal session (first session) |
+| `opt_levels_run.py` | One run: flash app (and model), reset, record serial, meter and OCR text |
+| `opt_levels_campaign.sh` | Eight formats × two builds (`-Og`, `-O2`) in one thermal session |

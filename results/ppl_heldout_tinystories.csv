@@ -10,6 +10,9 @@
 # int4bw_g288 is the larger-group INT4BW baseline (G=288). It jointly
 # changes scale traffic and group processing; its quality cost is reported.
 #
+# CTLE-KM and CTLE-GA were evaluated in the same way on 12 Oct 2026, with
+# CTLE-PSO rerun alongside as a control (7.79 again).
+#
 format,weights_file,ppl_heldout_113k,ppl_probe_192,n_tokens
 FP32,model.safetensors,4.32,9.35,113196
 INT4U,stories15M_int4u.bin,9116.82,11070,113196
@@ -18,3 +21,5 @@ CTLE-PSO,stories15M_pso_k16.bin,7.79,15.93,113196
 CTLE-5b,stories15M_ctle5_k32.bin,4.85,10.00,113196
 P-CTLE32,stories15M_pctle_k16.bin,9.66,20.30,113196
 INT4BW-g288,stories15M_int4bw_g288.bin,5.97,,113196
+CTLE-KM,stories15M_kmeans_k16.bin,8.47,19.23,113196
+CTLE-GA,stories15M_ga_k16.bin,8.38,18.98,113196

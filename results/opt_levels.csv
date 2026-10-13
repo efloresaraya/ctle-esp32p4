@@ -1,0 +1,36 @@
+# Latency and incremental energy at two compiler optimization levels.
+#
+# Every earlier hardware figure was measured with ESP-IDF's default
+# optimization level, -Og (CONFIG_COMPILER_OPTIMIZATION_DEBUG). This campaign
+# builds the same source twice, at -Og and at -O2
+# (CONFIG_COMPILER_OPTIMIZATION_PERF; firmware/sdkconfig.O2); the two
+# sdkconfig files differ only in the optimization level and in the FreeRTOS
+# task-function wrapper, which ESP-IDF enables only in debug builds.
+#
+# One thermal session, 12-13 Oct 2026, ESP32-P4 rev v1.3 at 360 MHz, revised
+# output-projection loops. Each model image is flashed once and both builds
+# run back to back, in alternating order. Three prompts x 64 generated tokens,
+# except INT4BW-g288's third prompt (44 tokens, EOS) in both builds.
+# Latency includes sampling and watchdog activity and excludes prefill.
+#
+# delta_p_mw: board power above the idle window of the same run, read by OCR
+# from an inline USB meter that resolves 0.5 mA (about 2.45 mW).
+# mj_per_token = delta_p_mw * ms_per_token / 1000.
+#
+format,build,model_kb,ms_per_token,ms_sd,tokens,idle_mw,idle_frames,active_frames,delta_p_mw,mj_per_token,watchdog_dumps,same_tokens_as_Og
+INT4U,-Og,7431,836.8,0.3,64 64 64,478.30,48,313,76.2,63.8,35,
+INT4U,-O2,7431,482.0,0.2,64 64 64,478.40,50,158,81.9,39.5,20,True
+INT4BW,-Og,9285,920.5,0.5,64 64 64,478.40,50,345,76.2,70.1,38,
+INT4BW,-O2,9285,585.0,0.9,64 64 64,478.50,48,196,82.6,48.3,24,True
+INT4BW-g288,-Og,7639,852.9,3.9,64 64 44,478.95,52,286,75.6,64.5,32,
+INT4BW-g288,-O2,7639,532.1,2.4,64 64 44,478.86,52,168,83.3,44.3,20,True
+CTLE-KM,-Og,7433,804.5,0.4,64 64 64,479.55,48,310,81.8,65.8,33,
+CTLE-KM,-O2,7433,468.1,0.2,64 64 64,479.05,48,155,101.7,47.6,19,True
+CTLE-GA,-Og,7433,804.5,0.3,64 64 64,479.22,50,287,82.1,66.1,33,
+CTLE-GA,-O2,7433,468.1,0.2,64 64 64,479.63,46,145,101.6,47.5,19,True
+CTLE-PSO,-Og,7433,804.5,0.3,64 64 64,480.01,52,284,81.4,65.5,33,
+CTLE-PSO,-O2,7433,468.1,0.2,64 64 64,479.46,45,162,102.0,47.7,19,True
+P-CTLE32,-Og,7433,781.4,0.3,64 64 64,479.70,46,275,87.4,68.3,32,
+P-CTLE32,-O2,7433,533.2,0.6,64 64 64,479.71,51,179,98.1,52.3,22,False
+CTLE-5b,-Og,9290,1014.6,0.3,64 64 64,480.47,50,391,79.2,80.3,42,
+CTLE-5b,-O2,9290,471.0,0.2,64 64 64,479.70,50,175,98.6,46.5,19,True
