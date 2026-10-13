@@ -39,7 +39,8 @@ and divided by the group size inside the inner loop, while CTLE-5b did neither.
   less incremental energy.
 - **Withdrawn: the gap is explained by PSRAM scale traffic.** INT4BW with
   `--group-size 288` cuts scale metadata from 1.90 to 0.21 MB and latency by
-  7.4 %, but larger groups also cut scale multiplies and group-loop steps, so
+  7.3 % at `-Og` and 9.0 % at `-O2`, but larger groups also cut scale
+  multiplies and group-loop steps, so
   this is reported as group-size sensitivity, not as an isolated cost.
 - **Quality on a held-out sample.** TinyStories perplexity is now measured on
   113,196 scored tokens from the first 549 validation stories
