@@ -209,7 +209,9 @@ def write_ctle_bin(
             if isinstance(val, np.ndarray):
                 _write_f32_block(f, val)
             elif isinstance(val, tuple):
-                kind = val[0]
+                # Tagged tuples start with a format name; legacy CTLE
+                # tuples start with the LUT array.
+                kind = val[0] if isinstance(val[0], str) else None
                 if kind == "int4u":
                     _, scale, nibbles = val
                     _write_int4u_block(f, scale, nibbles)

@@ -239,19 +239,22 @@ Pre-compressed binaries are already in `weights/`. To regenerate:
 ```bash
 # CTLE-PSO (4-bit, K=16) — 7.61 MB
 python3 -m scripts.compress \
-    --model models/stories15M/model.safetensors \
+    --input models/stories15M/model.safetensors \
+    --config models/stories15M/config.json \
     --method pso --k 16 --seed 42 \
     --output weights/stories15M_pso_k16.bin
 
 # CTLE-5b (5-bit, K=32) — 9.51 MB
 python3 -m scripts.compress \
-    --model models/stories15M/model.safetensors \
+    --input models/stories15M/model.safetensors \
+    --config models/stories15M/config.json \
     --method ctle5 --k 32 --seed 42 \
     --output weights/stories15M_ctle5_k32.bin
 
 # P-CTLE32 (W4 weights, 32-level act quant)
 python3 -m scripts.compress \
-    --model models/stories15M/model.safetensors \
+    --input models/stories15M/model.safetensors \
+    --config models/stories15M/config.json \
     --method pctle --k 16 --seed 42 \
     --output weights/stories15M_pctle_k16.bin
 ```
@@ -259,21 +262,23 @@ python3 -m scripts.compress \
 ### 4. Evaluate PPL
 
 ```bash
-# TinyStories probe (fast)
+# TinyStories, held-out sample used in the paper (113,196 tokens)
 python3 -m scripts.evaluate \
-    --bin weights/stories15M_ctle5_k32.bin \
-    --tokenizer models/tokenizer.model
+    --bins weights/stories15M_ctle5_k32.bin \
+    --tokenizer models/tokenizer.model \
+    --text-file models/tinystories_val_heldout.txt
 
 # WikiText-2 test split (requires HuggingFace datasets)
 python3 -m scripts.evaluate \
-    --bin weights/stories15M_ctle5_k32.bin \
+    --bins weights/stories15M_ctle5_k32.bin \
     --tokenizer models/tokenizer.model \
-    --wikitext2
+    --dataset wikitext2
 
 # P-CTLE with 32 activation levels
 python3 -m scripts.evaluate \
-    --bin weights/stories15M_pctle_k16.bin \
+    --bins weights/stories15M_pctle_k16.bin \
     --tokenizer models/tokenizer.model \
+    --text-file models/tinystories_val_heldout.txt \
     --act-levels 32
 ```
 
@@ -281,7 +286,7 @@ python3 -m scripts.evaluate \
 
 ```bash
 python3 -m scripts.generate \
-    --bin weights/stories15M_pso_k16.bin \
+    --bins weights/stories15M_pso_k16.bin \
     --tokenizer models/tokenizer.model \
     --prompt "Once upon a time"
 ```
