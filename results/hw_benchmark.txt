@@ -1,3 +1,6 @@
+# SUPERSEDED (13 Oct 2026): round-1 record, original output-projection loops,
+# firmware built at -Og. Its conclusions are withdrawn; see README "What
+# changed in v1.2.0" and results/opt_levels.csv. PSRAM is HEX (16-bit), not QSPI.
 # CTLE-P4 Hardware Benchmark — ESP32-P4 Nano
 # Date: 2026-05-24
 # Board: ESP32-P4 Nano, RISC-V HP @360 MHz (silicon rev v1.3, SDK sets 400 MHz, hw caps to 360 MHz)

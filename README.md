@@ -11,6 +11,26 @@ Companion code for:
 
 ---
 
+## What changed in v1.2.1
+
+- **Fixed: CTLE-KM, CTLE-GA and CTLE-PSO could not be written.** Since P-CTLE
+  was added, `pipeline/export.py` raised a `ValueError` on plain CTLE tensors.
+  The published weight files predate the error and are unaffected.
+- **Regeneration record.** Every format was regenerated once from the
+  published recipe and seed; INT4U, INT4BW (both group sizes), K-means and GA
+  are byte-identical to `weights/`, while the PSO-based formats are close but
+  not identical. The logs, file hashes and wall times are in
+  `results/rev2_logs/regen/`. The compression times in the manuscript's
+  Table III now come from this run.
+- **Table II traced to the weights.** `scripts/relmse_from_bins.py` computes
+  per-tensor RelMSE directly from `weights/*.bin`; it matches every cell of
+  the manuscript's Table II.
+- **Working commands.** The compress, evaluate and generate examples in this
+  README used wrong argument names; they now run as written.
+- **Tables.** `tables/` now matches the manuscript's Tables II–IV; the round-1
+  records `results/hw_benchmark.txt` and `results/hw_pctle.txt` are marked as
+  superseded.
+
 ## What changed in v1.2.0
 
 This release accompanies the second revision of manuscript
@@ -163,7 +183,7 @@ ctle-esp32p4/
 │   └── de.py            # Differential Evolution (experimental)
 ├── scripts/
 │   ├── compress.py      # Main entry-point — generates .bin from safetensors
-│   ├── evaluate.py      # PPL/NLL on TinyStories probe and WikiText-2
+│   ├── evaluate.py      # PPL/NLL on TinyStories (held-out sample) and WikiText-2
 │   ├── generate.py      # CPU-side autoregressive text generation
 │   └── pt_to_safetensors.py  # Convert llama2.c .pt → safetensors
 ├── firmware/
@@ -189,7 +209,7 @@ ctle-esp32p4/
 ├── energy/              # energy-measurement rig (see energy/README.md)
 │   ├── capture_energy.py    # dual-port capture + windowing + analysis
 │   └── ina219_monitor/      # ESP32-S3 power logger firmware
-├── tables/              # LaTeX table fragments generated from results/
+├── tables/              # LaTeX table fragments matching the manuscript; values from results/
 │   ├── table_ablation.tex
 │   ├── table_hw.tex
 │   ├── table_relmse.tex
@@ -239,19 +259,22 @@ Pre-compressed binaries are already in `weights/`. To regenerate:
 ```bash
 # CTLE-PSO (4-bit, K=16) — 7.61 MB
 python3 -m scripts.compress \
-    --model models/stories15M/model.safetensors \
+    --input models/stories15M/model.safetensors \
+    --config models/stories15M/config.json \
     --method pso --k 16 --seed 42 \
     --output weights/stories15M_pso_k16.bin
 
 # CTLE-5b (5-bit, K=32) — 9.51 MB
 python3 -m scripts.compress \
-    --model models/stories15M/model.safetensors \
+    --input models/stories15M/model.safetensors \
+    --config models/stories15M/config.json \
     --method ctle5 --k 32 --seed 42 \
     --output weights/stories15M_ctle5_k32.bin
 
 # P-CTLE32 (W4 weights, 32-level act quant)
 python3 -m scripts.compress \
-    --model models/stories15M/model.safetensors \
+    --input models/stories15M/model.safetensors \
+    --config models/stories15M/config.json \
     --method pctle --k 16 --seed 42 \
     --output weights/stories15M_pctle_k16.bin
 ```
@@ -259,21 +282,23 @@ python3 -m scripts.compress \
 ### 4. Evaluate PPL
 
 ```bash
-# TinyStories probe (fast)
+# TinyStories, held-out sample used in the paper (113,196 tokens)
 python3 -m scripts.evaluate \
-    --bin weights/stories15M_ctle5_k32.bin \
-    --tokenizer models/tokenizer.model
+    --bins weights/stories15M_ctle5_k32.bin \
+    --tokenizer models/tokenizer.model \
+    --text-file models/tinystories_val_heldout.txt
 
 # WikiText-2 test split (requires HuggingFace datasets)
 python3 -m scripts.evaluate \
-    --bin weights/stories15M_ctle5_k32.bin \
+    --bins weights/stories15M_ctle5_k32.bin \
     --tokenizer models/tokenizer.model \
-    --wikitext2
+    --dataset wikitext2
 
 # P-CTLE with 32 activation levels
 python3 -m scripts.evaluate \
-    --bin weights/stories15M_pctle_k16.bin \
+    --bins weights/stories15M_pctle_k16.bin \
     --tokenizer models/tokenizer.model \
+    --text-file models/tinystories_val_heldout.txt \
     --act-levels 32
 ```
 
@@ -281,7 +306,7 @@ python3 -m scripts.evaluate \
 
 ```bash
 python3 -m scripts.generate \
-    --bin weights/stories15M_pso_k16.bin \
+    --bins weights/stories15M_pso_k16.bin \
     --tokenizer models/tokenizer.model \
     --prompt "Once upon a time"
 ```

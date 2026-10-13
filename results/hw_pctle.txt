@@ -1,3 +1,6 @@
+SUPERSEDED (13 Oct 2026): round-1 record, original output-projection loops,
+firmware built at -Og. See README "What changed in v1.2.0" and results/opt_levels.csv.
+
 P-CTLE Hardware Benchmark — ESP32-P4 Nano (RISC-V HP @360MHz)
 Generated: 2026-05-24
 Method detected: PCTLE (TAG_PCTLE=4)

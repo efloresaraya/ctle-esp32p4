@@ -1,0 +1,82 @@
+
+================================================================
+  CTLE Compression Pipeline
+================================================================
+  Input   : models/stories15M/model.safetensors
+  Config  : models/stories15M/config.json
+  Output  : /Users/emilioylore/CTLE_v1_v2/bench_rev2/regen/out/stories15M_ctle5_k32.bin
+  K       : 32 centroids (5-bit)
+  Method  : CTLE-5b (K=32, PSO opt, 5-bit packed indices)
+  Seed    : 42
+
+  Loaded 56 tensors from safetensors
+
+  Tensor                                             Shape                Type       RelMSE
+  -------------------------------------------------- -------------------- ------ ----------
+  layers.0.attention.wk.weight                       (288, 288)           CTLE5    0.004055
+  layers.0.attention.wo.weight                       (288, 288)           CTLE5    0.005660
+  layers.0.attention.wq.weight                       (288, 288)           CTLE5    0.004276
+  layers.0.attention.wv.weight                       (288, 288)           CTLE5    0.002879
+  layers.0.attention_norm.weight                     (288,)               F32             —
+  layers.0.feed_forward.w1.weight                    (768, 288)           CTLE5    0.002784
+  layers.0.feed_forward.w2.weight                    (288, 768)           CTLE5    0.004026
+  layers.0.feed_forward.w3.weight                    (768, 288)           CTLE5    0.002587
+  layers.0.ffn_norm.weight                           (288,)               F32             —
+  layers.1.attention.wk.weight                       (288, 288)           CTLE5    0.003765
+  layers.1.attention.wo.weight                       (288, 288)           CTLE5    0.004079
+  layers.1.attention.wq.weight                       (288, 288)           CTLE5    0.003627
+  layers.1.attention.wv.weight                       (288, 288)           CTLE5    0.002790
+  layers.1.attention_norm.weight                     (288,)               F32             —
+  layers.1.feed_forward.w1.weight                    (768, 288)           CTLE5    0.005228
+  layers.1.feed_forward.w2.weight                    (288, 768)           CTLE5    0.003422
+  layers.1.feed_forward.w3.weight                    (768, 288)           CTLE5    0.002563
+  layers.1.ffn_norm.weight                           (288,)               F32             —
+  layers.2.attention.wk.weight                       (288, 288)           CTLE5    0.004572
+  layers.2.attention.wo.weight                       (288, 288)           CTLE5    0.003544
+  layers.2.attention.wq.weight                       (288, 288)           CTLE5    0.003580
+  layers.2.attention.wv.weight                       (288, 288)           CTLE5    0.002677
+  layers.2.attention_norm.weight                     (288,)               F32             —
+  layers.2.feed_forward.w1.weight                    (768, 288)           CTLE5    0.004548
+  layers.2.feed_forward.w2.weight                    (288, 768)           CTLE5    0.003043
+  layers.2.feed_forward.w3.weight                    (768, 288)           CTLE5    0.002555
+  layers.2.ffn_norm.weight                           (288,)               F32             —
+  layers.3.attention.wk.weight                       (288, 288)           CTLE5    0.003840
+  layers.3.attention.wo.weight                       (288, 288)           CTLE5    0.003233
+  layers.3.attention.wq.weight                       (288, 288)           CTLE5    0.003408
+  layers.3.attention.wv.weight                       (288, 288)           CTLE5    0.002658
+  layers.3.attention_norm.weight                     (288,)               F32             —
+  layers.3.feed_forward.w1.weight                    (768, 288)           CTLE5    0.003776
+  layers.3.feed_forward.w2.weight                    (288, 768)           CTLE5    0.003616
+  layers.3.feed_forward.w3.weight                    (768, 288)           CTLE5    0.002630
+  layers.3.ffn_norm.weight                           (288,)               F32             —
+  layers.4.attention.wk.weight                       (288, 288)           CTLE5    0.004090
+  layers.4.attention.wo.weight                       (288, 288)           CTLE5    0.003200
+  layers.4.attention.wq.weight                       (288, 288)           CTLE5    0.003744
+  layers.4.attention.wv.weight                       (288, 288)           CTLE5    0.002662
+  layers.4.attention_norm.weight                     (288,)               F32             —
+  layers.4.feed_forward.w1.weight                    (768, 288)           CTLE5    0.003139
+  layers.4.feed_forward.w2.weight                    (288, 768)           CTLE5    0.003226
+  layers.4.feed_forward.w3.weight                    (768, 288)           CTLE5    0.002580
+  layers.4.ffn_norm.weight                           (288,)               F32             —
+  layers.5.attention.wk.weight                       (288, 288)           CTLE5    0.003988
+  layers.5.attention.wo.weight                       (288, 288)           CTLE5    0.003638
+  layers.5.attention.wq.weight                       (288, 288)           CTLE5    0.003872
+  layers.5.attention.wv.weight                       (288, 288)           CTLE5    0.002983
+  layers.5.attention_norm.weight                     (288,)               F32             —
+  layers.5.feed_forward.w1.weight                    (768, 288)           CTLE5    0.003152
+  layers.5.feed_forward.w2.weight                    (288, 768)           CTLE5    0.003812
+  layers.5.feed_forward.w3.weight                    (768, 288)           CTLE5    0.003061
+  layers.5.ffn_norm.weight                           (288,)               F32             —
+  norm.weight                                        (288,)               F32             —
+  tok_embeddings.weight                              (32000, 288)         CTLE5    0.003591
+
+================================================================
+  FP32 footprint :    60.77 MB
+  CTLE footprint :     9.51 MB
+  Compression    :     6.39×
+  Time           :    404.7 s
+================================================================
+
+Written: /Users/emilioylore/CTLE_v1_v2/bench_rev2/regen/out/stories15M_ctle5_k32.bin  (9.51 MB)
+  Written → /Users/emilioylore/CTLE_v1_v2/bench_rev2/regen/out/stories15M_ctle5_k32.bin
+

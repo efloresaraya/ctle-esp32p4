@@ -1,0 +1,11 @@
+== kmeans start 11:46:21
+== kmeans exit 1 11:47:43
+== ga start 11:47:43
+== ga exit 1 11:50:56
+== pso start 11:50:56
+== pso exit 1 11:54:13
+== pctle start 11:54:13
+== pctle exit 0 11:57:31
+== ctle5 start 11:57:31
+== ctle5 exit 0 12:04:16
+REGEN DONE
