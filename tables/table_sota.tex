@@ -1,5 +1,5 @@
 % table_sota.tex  — Table II: Comparison with state-of-the-art
-% Updated 2026-05-24 with WikiText-2 column and corrected FP32 = 9.35 (TS) / 6,127 (WT2).
+% Additional cross-model comparison; not the manuscript runtime-assumption table.
 %
 % GPTQ, SqueezeLLM, LLM.int8() PPL values verified from official repos/papers
 % on their own models (OPT-125M / LLaMA-7B). NOT comparable to ours.
@@ -27,7 +27,7 @@ LLM.int8()~\cite{dettmers2022llmint8} & 8 & OPT/LLaMA & GPU & $\approx$FP16 \\
 FP32 (ours) & 32 & TinyStories-15M & MCU & 6{,}127 \\
 INT4BW (ours) & $\sim$5 & TinyStories-15M & MCU & 7{,}120 \\
 CTLE-PSO (ours) & 4 & TinyStories-15M & MCU & 16{,}827 \\
-P-CTLE32 (ours) & W4/A5 & TinyStories-15M & MCU/NPU & 19{,}095 \\
+P-CTLE32 (ours) & W4/A5 & TinyStories-15M & MCU & 19{,}095 \\
 CTLE-5b (ours) & 5 & TinyStories-15M & MCU & 8{,}226 \\
 \bottomrule
 \end{tabular}

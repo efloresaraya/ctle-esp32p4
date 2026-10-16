@@ -5,8 +5,8 @@
 \begin{table}[t]
 \centering
 \footnotesize
-\caption{ESP32-P4, revised output loops; one source/session at \texttt{-Og}
-and \texttt{-O2}. Three-prompt mean latency (SD ${\le}3.9$\,ms); $\Delta P$
+\caption{ESP32-P4, grouped output loops; one source/session at \texttt{-Og}
+and \texttt{-O2}. Three-prompt mean latency (population SD $<4$\,ms); $\Delta P$
 (mW): active minus same-run idle; mJ: incremental energy per token.}
 \label{tab:hw}
 \setlength{\tabcolsep}{2.6pt}
@@ -14,7 +14,7 @@ and \texttt{-O2}. Three-prompt mean latency (SD ${\le}3.9$\,ms); $\Delta P$
 \begin{tabular}{lrrrrrrr}
 \toprule
  & & \multicolumn{3}{c}{\texttt{-Og}} & \multicolumn{3}{c}{\texttt{-O2}} \\
-\textbf{Method} & \textbf{KB} & ms/tok & $\Delta P$ & mJ & ms/tok & $\Delta P$ & mJ \\
+\textbf{Method} & \textbf{KiB} & ms/tok & $\Delta P$ & mJ & ms/tok & $\Delta P$ & mJ \\
 \midrule
 INT4U & 7{,}431 & 836.8 & 76.2 & 63.8 & 482.0 & 81.9 & 39.5 \\
 INT4BW & 9{,}285 & 920.5 & 76.2 & 70.1 & 585.0 & 82.6 & 48.3 \\

@@ -1,5 +1,5 @@
 % table_relmse.tex
-% Table III — Per-tensor reconstruction error (selected tensors, k=16)
+% Expanded companion to manuscript Table II — reconstruction error (k=16)
 %
 % Shows where metaheuristics improve over K-means.
 % Values: RelMSE of the published weights, results/rev2_logs/regen/
@@ -16,9 +16,9 @@
 \centering
 \footnotesize
 \caption{Per-tensor relative reconstruction error (RelMSE) for selected tensors,
-         $k{=}16$ centroids. Bold = best per row. The embedding matrix
-         (\texttt{tok\_emb}) is the largest tensor (32\,K$\times$288\,=\,9.2\,M weights)
-         and the primary contributor to PPL improvement under PSO.}
+         $k{=}16$ centroids. Bold indicates the lowest displayed RelMSE per tensor,
+         including ties at the reported precision. The embedding matrix
+         (\texttt{tok\_emb}) is the largest tensor (32\,K$\times$288\,=\,9.2\,M weights).}
 \label{tab:relmse}
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.15}
@@ -30,9 +30,9 @@
 \quad\texttt{tok\_emb}         & $32000\times288$ & 0.01190 & 0.01191 & \textbf{0.01013} \\
 \midrule
 \multicolumn{5}{l}{\textit{Attention weights (layer 0)}} \\
-\quad\texttt{wq.0}              & $288\times288$   & 0.01553 & 0.01553 & \textbf{0.01564}$^*$ \\
-\quad\texttt{wk.0}              & $288\times288$   & 0.01473 & 0.01473 & 0.01474 \\
-\quad\texttt{wo.0}              & $288\times288$   & 0.01927 & \textbf{0.01927} & 0.01994 \\
+\quad\texttt{wq.0}              & $288\times288$   & \textbf{0.01553} & \textbf{0.01553} & 0.01564 \\
+\quad\texttt{wk.0}              & $288\times288$   & \textbf{0.01473} & \textbf{0.01473} & 0.01474 \\
+\quad\texttt{wo.0}              & $288\times288$   & \textbf{0.01927} & \textbf{0.01927} & 0.01994 \\
 \midrule
 \multicolumn{5}{l}{\textit{Feed-forward weights (layer 0)}} \\
 \quad\texttt{w1.0}              & $768\times288$   & \textbf{0.00997} & \textbf{0.00997} & 0.00999 \\
@@ -51,11 +51,11 @@
 \smallskip
 \begin{minipage}{0.95\columnwidth}
   \footnotesize
-  $^*$~Marginal PSO regressions on small tensors ($\leq$82\,K weights) reflect
-  stochastic sampling noise in fitness evaluation (50\,K-sample subsample),
-  not genuine degradation. K-means finds near-optimal solutions for small
-  tensors, confirmed by the identical mean RelMSE across methods.
-  PSO's advantage concentrates on \texttt{tok\_emb}: $-$14.9\,\% RelMSE,
-  and PSO lowers held-out TinyStories perplexity from 8.47 (K-means) to 7.79.
+  PSO reduces \texttt{tok\_emb} RelMSE by 14.9\,\% relative to K-means,
+  while the selected projection tensors show no reduction at the reported
+  precision. The unweighted mean over all 43 tensors is 0.01264 for K-means
+  and GA and 0.01265 for PSO. Held-out TinyStories perplexity is 8.47 for
+  K-means and 7.79 for PSO; these measurements do not isolate the embedding's
+  contribution to the perplexity difference.
 \end{minipage}
 \end{table}

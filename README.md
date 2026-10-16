@@ -196,7 +196,7 @@ ctle-esp32p4/
 ├── weights/             # Pre-compressed .bin files (tracked, 7–9 MB each)
 │   ├── stories15M_pso_k16.bin      # CTLE-PSO  4-bit K=16
 │   ├── stories15M_ctle5_k32.bin    # CTLE-5b   5-bit K=32
-│   ├── stories15M_pctle_k16.bin    # P-CTLE    W4/A4
+│   ├── stories15M_pctle_k16.bin    # P-CTLE32  W4/A5
 │   ├── stories15M_int4bw.bin       # INT4BW baseline
 │   ├── stories15M_int4u.bin        # INT4U baseline
 │   ├── stories15M_kmeans_k16.bin   # CTLE-KM
